@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
 import {
   Building2,
   User,
@@ -16,7 +15,6 @@ import {
 } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
-  const [role, setRole] = useState<UserRole>('resident');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +23,6 @@ export const RegisterPage: React.FC = () => {
   const [block, setBlock] = useState('Block A');
   const [roomNumber, setRoomNumber] = useState('204');
   const [bedNumber, setBedNumber] = useState('Bed 1');
-  const [wardenPasscode, setWardenPasscode] = useState('');
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,30 +34,43 @@ export const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (role === 'warden' && wardenPasscode.trim() !== 'WARDEN2026' && wardenPasscode.trim() !== 'ADMIN') {
-      setError('Invalid Warden Security Passcode. (Hint: Use WARDEN2026 or ADMIN)');
+    // Validation
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+    const cleanPhone = phone.trim();
+    const cleanRoom = roomNumber.trim();
+
+    if (!cleanName || cleanName.length < 2) {
+      setError('Please provide your full legal name.');
+      return;
+    }
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please enter a valid institutional email.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (!cleanRoom) {
+      setError('Please provide your room number.');
       return;
     }
 
     setSubmitting(true);
     try {
       const user = await signup({
-        name,
-        email,
+        name: cleanName,
+        email: cleanEmail,
         password,
-        phone,
-        role,
+        phone: cleanPhone || '+91 98000 00000',
         hostel,
-        block: role === 'warden' ? 'Administration' : block,
-        roomNumber: role === 'warden' ? 'Admin-01' : roomNumber,
-        bedNumber: role === 'warden' ? 'N/A' : bedNumber
+        block,
+        roomNumber: cleanRoom,
+        bedNumber
       });
 
-      if (user.role === 'warden') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Registration failed.');
     } finally {
@@ -103,10 +113,10 @@ export const RegisterPage: React.FC = () => {
             </span>
           </Link>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-            Create Your Resident Profile
+            Resident Student Registration
           </h1>
           <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '4px' }}>
-            Connect to your room inventory, mess meals, and rapid maintenance
+            Register your resident profile for room inventory, dining, and rapid maintenance
           </p>
         </div>
 
@@ -121,58 +131,24 @@ export const RegisterPage: React.FC = () => {
             border: '1.5px solid #e2e8f0'
           }}
         >
-          {/* Role selector */}
+          {/* Badge */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              background: '#f1f5f9',
-              padding: '4px',
-              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              borderRadius: '10px',
+              background: '#eef2ff',
+              color: '#3730a3',
+              fontSize: '0.825rem',
+              fontWeight: 700,
               marginBottom: '20px'
             }}
           >
-            <button
-              type="button"
-              onClick={() => setRole('resident')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '10px',
-                borderRadius: '10px',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                color: role === 'resident' ? '#4f46e5' : '#64748b',
-                background: role === 'resident' ? '#ffffff' : 'transparent',
-                boxShadow: role === 'resident' ? 'var(--shadow-sm)' : 'none'
-              }}
-            >
-              <User size={16} />
-              <span>Hostel Resident</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRole('warden')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '10px',
-                borderRadius: '10px',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                color: role === 'warden' ? '#4338ca' : '#64748b',
-                background: role === 'warden' ? '#ffffff' : 'transparent',
-                boxShadow: role === 'warden' ? 'var(--shadow-sm)' : 'none'
-              }}
-            >
-              <ShieldCheck size={16} />
-              <span>Warden Admin</span>
-            </button>
+            <User size={16} />
+            <span>Hostel Resident Account Portal</span>
           </div>
 
           {error && (
@@ -201,6 +177,7 @@ export const RegisterPage: React.FC = () => {
               <input
                 type="text"
                 required
+                maxLength={60}
                 placeholder="e.g. Aarav Sharma"
                 className="form-input"
                 value={name}
@@ -210,10 +187,11 @@ export const RegisterPage: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               <div className="form-group">
-                <label className="form-label">Email Address</label>
+                <label className="form-label">Institutional Email</label>
                 <input
                   type="email"
                   required
+                  maxLength={80}
                   placeholder="student@campus.edu"
                   className="form-input"
                   value={email}
@@ -226,6 +204,7 @@ export const RegisterPage: React.FC = () => {
                 <input
                   type="tel"
                   required
+                  maxLength={20}
                   placeholder="+91 98765 43210"
                   className="form-input"
                   value={phone}
@@ -239,6 +218,8 @@ export const RegisterPage: React.FC = () => {
               <input
                 type="password"
                 required
+                minLength={6}
+                maxLength={100}
                 placeholder="Minimum 6 characters"
                 className="form-input"
                 value={password}
@@ -246,65 +227,48 @@ export const RegisterPage: React.FC = () => {
               />
             </div>
 
-            {role === 'resident' ? (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Hostel</label>
-                    <select className="form-select" value={hostel} onChange={e => setHostel(e.target.value)}>
-                      <option value="Aravali Boys Hostel">Aravali Hostel</option>
-                      <option value="Nilgiri Boys Hostel">Nilgiri Hostel</option>
-                      <option value="Shivalik Girls Hostel">Shivalik Hostel</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Block / Wing</label>
-                    <select className="form-select" value={block} onChange={e => setBlock(e.target.value)}>
-                      <option value="Block A">Block A</option>
-                      <option value="Block B">Block B</option>
-                      <option value="Block C">Block C</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Room No.</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. 204"
-                      className="form-input"
-                      value={roomNumber}
-                      onChange={e => setRoomNumber(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Bed No.</label>
-                    <select className="form-select" value={bedNumber} onChange={e => setBedNumber(e.target.value)}>
-                      <option value="Bed 1">Bed 1 (Window)</option>
-                      <option value="Bed 2">Bed 2 (Door)</option>
-                      <option value="Bed 3">Bed 3 (Corner)</option>
-                    </select>
-                  </div>
-                </div>
-              </>
-            ) : (
+            {/* Room Allocation fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
               <div className="form-group">
-                <label className="form-label">Warden Authorization Passcode</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Enter WARDEN2026"
-                  className="form-input"
-                  value={wardenPasscode}
-                  onChange={e => setWardenPasscode(e.target.value)}
-                />
-                <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                  Required for institutional administrative authorization (Passcode: WARDEN2026)
-                </span>
+                <label className="form-label">Hostel</label>
+                <select className="form-select" value={hostel} onChange={e => setHostel(e.target.value)}>
+                  <option value="Aravali Boys Hostel">Aravali Hostel</option>
+                  <option value="Nilgiri Boys Hostel">Nilgiri Hostel</option>
+                  <option value="Shivalik Girls Hostel">Shivalik Hostel</option>
+                </select>
               </div>
-            )}
+
+              <div className="form-group">
+                <label className="form-label">Block / Wing</label>
+                <select className="form-select" value={block} onChange={e => setBlock(e.target.value)}>
+                  <option value="Block A">Block A</option>
+                  <option value="Block B">Block B</option>
+                  <option value="Block C">Block C</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Room No.</label>
+                <input
+                  type="text"
+                  required
+                  maxLength={10}
+                  placeholder="e.g. 204"
+                  className="form-input"
+                  value={roomNumber}
+                  onChange={e => setRoomNumber(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Bed No.</label>
+                <select className="form-select" value={bedNumber} onChange={e => setBedNumber(e.target.value)}>
+                  <option value="Bed 1">Bed 1 (Window)</option>
+                  <option value="Bed 2">Bed 2 (Door)</option>
+                  <option value="Bed 3">Bed 3 (Corner)</option>
+                </select>
+              </div>
+            </div>
 
             <button
               type="submit"
@@ -312,10 +276,34 @@ export const RegisterPage: React.FC = () => {
               className="btn btn-primary"
               style={{ width: '100%', padding: '12px', marginTop: '8px', fontSize: '0.95rem' }}
             >
-              {submitting ? 'Registering Account...' : 'Complete Registration'}
+              {submitting ? 'Creating Profile...' : 'Complete Resident Registration'}
               <ArrowRight size={18} />
             </button>
           </form>
+
+          {/* Notice regarding warden accounts */}
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '12px 14px',
+              background: '#f8fafc',
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
+              fontSize: '0.8rem',
+              color: '#64748b',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <ShieldCheck size={16} color="#4f46e5" style={{ flexShrink: 0 }} />
+            <span>
+              Warden Administration accounts are provisioned exclusively through authorized campus credentials.{' '}
+              <Link to="/login?role=warden" style={{ color: '#4f46e5', fontWeight: 700 }}>
+                Warden Sign In
+              </Link>
+            </span>
+          </div>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.875rem', color: '#64748b' }}>

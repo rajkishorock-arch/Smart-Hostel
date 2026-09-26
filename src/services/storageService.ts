@@ -1,4 +1,4 @@
-import { DayMenu, RoomRecord, Ticket, UserProfile, WeeklyMessMenu } from '../types';
+import { DayMenu, RoomRecord, Ticket, UserProfile, WeeklyMessMenu, UserRole } from '../types';
 import { DEMO_USERS, INITIAL_MESS_MENU, INITIAL_ROOMS, INITIAL_TICKETS } from './mockData';
 import { db, isFirebaseConfigured } from './firebase';
 import {
@@ -8,7 +8,9 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  onSnapshot
+  onSnapshot,
+  query,
+  where
 } from 'firebase/firestore';
 
 const KEYS = {
@@ -153,24 +155,37 @@ export async function updateTicketStatus(
   return ticket;
 }
 
-export function subscribeTickets(callback: (tickets: Ticket[]) => void): () => void {
-  // If Firebase configured, attempt real-time onSnapshot
+export function subscribeTickets(
+  callback: (tickets: Ticket[]) => void,
+  userFilter?: { role: UserRole; uid: string }
+): () => void {
+  // If Firebase configured, attempt real-time onSnapshot with role-appropriate query
   if (isFirebaseConfigured && db) {
     try {
-      const unsubscribe = onSnapshot(collection(db, 'tickets'), snapshot => {
+      const ticketsRef = collection(db, 'tickets');
+      // For residents, Firestore rules require filtering by residentId to prevent permission denied
+      const q = (userFilter && userFilter.role === 'resident' && userFilter.uid)
+        ? query(ticketsRef, where('residentId', '==', userFilter.uid))
+        : ticketsRef;
+
+      const unsubscribe = onSnapshot(q, snapshot => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map(d => d.data() as Ticket);
           // Sort descending by creation date
           list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           callback(list);
-          // Also mirror to local storage
           localStorage.setItem(KEYS.TICKETS, JSON.stringify(list));
         } else {
-          callback(getStoredTickets());
+          callback([]);
         }
       }, err => {
-        console.warn('Firestore snapshot error, relying on local reactive listener:', err);
-        callback(getStoredTickets());
+        console.warn('Firestore tickets snapshot error, falling back to local store:', err.message);
+        const stored = getStoredTickets();
+        if (userFilter && userFilter.role === 'resident' && userFilter.uid) {
+          callback(stored.filter(t => t.residentId === userFilter.uid));
+        } else {
+          callback(stored);
+        }
       });
 
       const handleLocal = () => callback(getStoredTickets());

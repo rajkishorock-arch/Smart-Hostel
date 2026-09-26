@@ -38,6 +38,8 @@ export const LodgeTicketModal: React.FC<LodgeTicketModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [userOverridden, setUserOverridden] = useState(false);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   // Run AI classification whenever description changes
   useEffect(() => {
     if (!description.trim()) {
@@ -63,7 +65,13 @@ export const LodgeTicketModal: React.FC<LodgeTicketModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim()) return;
+    setSubmitError(null);
+
+    const cleanDesc = description.trim();
+    if (!cleanDesc || cleanDesc.length < 5) {
+      setSubmitError('Please provide a descriptive explanation (at least 5 characters).');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -71,10 +79,10 @@ export const LodgeTicketModal: React.FC<LodgeTicketModalProps> = ({
         id: 'tkt-' + Date.now().toString().slice(-6),
         residentId: user.uid,
         residentName: user.name,
-        room: room.trim() || user.roomNumber || '204',
-        block: block.trim() || user.block || 'Block A',
+        room: room.trim().slice(0, 15) || user.roomNumber || '204',
+        block: block.trim().slice(0, 20) || user.block || 'Block A',
         category,
-        description: description.trim(),
+        description: cleanDesc.slice(0, 500),
         priority,
         status: 'Open',
         aiClassified: Boolean(aiResult && aiResult.confidence > 50),
@@ -89,7 +97,7 @@ export const LodgeTicketModal: React.FC<LodgeTicketModalProps> = ({
       onSuccess(newTicket);
       onClose();
     } catch (err) {
-      console.error('Failed to submit ticket:', err);
+      setSubmitError('Unable to lodge maintenance ticket right now. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -203,6 +211,26 @@ export const LodgeTicketModal: React.FC<LodgeTicketModalProps> = ({
             </button>
           </div>
         </div>
+
+        {submitError && (
+          <div
+            style={{
+              background: '#fee2e2',
+              border: '1px solid #fecaca',
+              color: '#b91c1c',
+              padding: '12px 14px',
+              borderRadius: '10px',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '18px'
+            }}
+          >
+            <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+            <span>{submitError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* Room & Block info */}

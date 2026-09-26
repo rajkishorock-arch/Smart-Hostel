@@ -7,12 +7,14 @@ import {
   setStoredCurrentUser,
   EVENT_AUTH_CHANGED
 } from '../services/storageService';
-import { auth, isFirebaseConfigured } from '../services/firebase';
+import { auth, db, isFirebaseConfigured } from '../services/firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut as firebaseSignOut
+  signOut as firebaseSignOut,
+  onAuthStateChanged
 } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -21,7 +23,7 @@ interface AuthContextType {
   isWarden: boolean;
   isResident: boolean;
   login: (email: string, password: string, role?: UserRole) => Promise<UserProfile>;
-  signup: (userData: Omit<UserProfile, 'uid' | 'createdAt'> & { password?: string }) => Promise<UserProfile>;
+  signup: (userData: Omit<UserProfile, 'uid' | 'createdAt' | 'role'> & { password?: string }) => Promise<UserProfile>;
   logout: () => Promise<void>;
   quickDemoLogin: (role: 'resident' | 'warden') => Promise<UserProfile>;
 }
@@ -33,17 +35,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Initial load
-    const current = getStoredCurrentUser();
-    setUser(current);
-    setLoading(false);
+    // 1. Firebase onAuthStateChanged is the authoritative source of truth
+    if (isFirebaseConfigured && auth) {
+      const unsubscribeAuth = onAuthStateChanged(auth, async fbUser => {
+        if (fbUser) {
+          try {
+            if (db) {
+              const userDocRef = doc(db, 'users', fbUser.uid);
+              const userDoc = await getDoc(userDocRef);
+              if (userDoc.exists()) {
+                const profile = userDoc.data() as UserProfile;
+                setUser(profile);
+                setStoredCurrentUser(profile);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn('Firestore profile lookup error:', err);
+          }
 
-    const handleAuthChange = () => {
+          // Fallback to local storage or fallback profile if Firestore doc not yet created
+          const localUsers = getStoredUsers();
+          const matched = Object.values(localUsers).find(
+            u => u.email.toLowerCase() === fbUser.email?.toLowerCase() || u.uid === fbUser.uid
+          );
+          if (matched) {
+            setUser(matched);
+            setStoredCurrentUser(matched);
+          }
+        } else {
+          // If Firebase says unauthenticated, clear session unless running in local offline demo mode
+          const current = getStoredCurrentUser();
+          if (current && !current.uid.startsWith('res-') && !current.uid.startsWith('warden-')) {
+            setUser(null);
+            setStoredCurrentUser(null);
+          } else {
+            setUser(current);
+          }
+        }
+        setLoading(false);
+      });
+
+      return () => unsubscribeAuth();
+    } else {
+      // Local development / offline mode
       setUser(getStoredCurrentUser());
-    };
+      setLoading(false);
 
-    window.addEventListener(EVENT_AUTH_CHANGED, handleAuthChange);
-    return () => window.removeEventListener(EVENT_AUTH_CHANGED, handleAuthChange);
+      const handleAuthChange = () => {
+        setUser(getStoredCurrentUser());
+      };
+      window.addEventListener(EVENT_AUTH_CHANGED, handleAuthChange);
+      return () => window.removeEventListener(EVENT_AUTH_CHANGED, handleAuthChange);
+    }
   }, []);
 
   const login = async (email: string, password: string, selectedRole?: UserRole): Promise<UserProfile> => {
@@ -51,21 +96,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const cleanEmail = email.trim().toLowerCase();
 
-      // Check if user exists in local/synced storage
+      // Check if user exists in local/demo storage
       const users = getStoredUsers();
       let matchedUser = Object.values(users).find(u => u.email.toLowerCase() === cleanEmail);
 
       // Attempt Firebase auth if configured
       if (isFirebaseConfigured && auth) {
         try {
-          await signInWithEmailAndPassword(auth, cleanEmail, password);
-        } catch (fbErr) {
+          const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
+          if (db) {
+            const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+            if (userDoc.exists()) {
+              matchedUser = userDoc.data() as UserProfile;
+            }
+          }
+        } catch (fbErr: any) {
+          if (fbErr.code === 'auth/invalid-credential' || fbErr.code === 'auth/user-not-found' || fbErr.code === 'auth/wrong-password') {
+            throw new Error('Invalid email or password. Please verify your credentials.');
+          }
+          if (fbErr.code === 'auth/too-many-requests') {
+            throw new Error('Too many failed login attempts. Please wait a few moments.');
+          }
           console.warn('Firebase login attempt fallback to local auth:', fbErr);
         }
       }
 
       if (!matchedUser) {
-        // If not found in seed, create a profile on the fly with the selected role or default resident
+        // Only if running in demo mode
         const role = selectedRole || (cleanEmail.includes('warden') || cleanEmail.includes('admin') ? 'warden' : 'resident');
         const namePart = cleanEmail.split('@')[0];
         const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
@@ -96,18 +153,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signup = async (
-    userData: Omit<UserProfile, 'uid' | 'createdAt'> & { password?: string }
+    userData: Omit<UserProfile, 'uid' | 'createdAt' | 'role'> & { password?: string }
   ): Promise<UserProfile> => {
     setLoading(true);
     try {
       const cleanEmail = userData.email.trim().toLowerCase();
       let uid = 'usr-' + Date.now();
 
+      // PUBLIC SIGNUP IS STRICTLY RESIDENT ROLE
+      const assignedRole: UserRole = 'resident';
+
       if (isFirebaseConfigured && auth && userData.password) {
         try {
           const cred = await createUserWithEmailAndPassword(auth, cleanEmail, userData.password);
           uid = cred.user.uid;
         } catch (fbErr: any) {
+          if (fbErr.code === 'auth/email-already-in-use') {
+            throw new Error('An account with this email address already exists. Please sign in instead.');
+          }
+          if (fbErr.code === 'auth/weak-password') {
+            throw new Error('Password should be at least 6 characters.');
+          }
+          if (fbErr.code === 'auth/invalid-email') {
+            throw new Error('Please enter a valid institutional email address.');
+          }
           console.warn('Firebase signup fallback to local account:', fbErr);
         }
       }
@@ -116,14 +185,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uid,
         email: cleanEmail,
         name: userData.name.trim(),
-        role: userData.role,
+        role: assignedRole,
         phone: userData.phone.trim() || '+91 98000 00000',
         hostel: userData.hostel || 'Aravali Boys Hostel',
-        block: userData.block || (userData.role === 'warden' ? 'Administration' : 'Block A'),
-        roomNumber: userData.roomNumber || (userData.role === 'warden' ? 'Admin-01' : '101'),
-        bedNumber: userData.bedNumber || (userData.role === 'warden' ? 'N/A' : 'Bed 1'),
+        block: userData.block || 'Block A',
+        roomNumber: userData.roomNumber || '101',
+        bedNumber: userData.bedNumber || 'Bed 1',
         createdAt: new Date().toISOString()
       };
+
+      // Write to Firestore and local storage
+      if (isFirebaseConfigured && db && uid) {
+        try {
+          await setDoc(doc(db, 'users', uid), newProfile);
+        } catch (err: any) {
+          console.warn('Firestore user profile creation error:', err);
+        }
+      }
 
       saveStoredUser(newProfile);
       setStoredCurrentUser(newProfile);
@@ -132,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return newProfile;
     } catch (err: any) {
       setLoading(false);
-      throw new Error(err.message || 'Signup failed.');
+      throw new Error(err.message || 'Registration failed.');
     }
   };
 

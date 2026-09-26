@@ -20,7 +20,7 @@ export const AboutUs: React.FC = () => {
             alignItems: 'center'
           }}
         >
-          {/* Left Column: Mission & Impact */}
+          {/* Left Column: Mission & Architecture */}
           <div>
             <span
               style={{
@@ -31,7 +31,7 @@ export const AboutUs: React.FC = () => {
                 letterSpacing: '0.08em'
               }}
             >
-              About Smart Hostel Administration
+              System Overview &amp; Architecture
             </span>
             <h2
               className="font-display"
@@ -43,44 +43,42 @@ export const AboutUs: React.FC = () => {
                 marginBottom: '20px'
               }}
             >
-              Elevating Campus Residential Living Through Modern Tech
+              Modernizing Campus Residential &amp; Mess Operations
             </h2>
             <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.7, marginBottom: '20px' }}>
-              Collegiate hostels house the leaders of tomorrow. Yet historically, hostel life has been
-              hindered by lost complaints in paper registers, delayed electrical and plumbing fixes, and
-              unpredictable mess schedules.
+              Hostels form the backbone of collegiate student life. Traditional residence management often
+              relies on fragmented paper complaint logs, uncoordinated meal menus, and opaque maintenance routing.
             </p>
             <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.7, marginBottom: '28px' }}>
-              <strong>Smart Hostel</strong> was built by campus wardens and student engineers to replace
-              chaotic WhatsApp groups and physical logbooks with a secure, real-time administrative platform.
-              From room allocation to dining hygiene and AI-prioritized repairs, we ensure safety, transparency,
-              and comfort.
+              <strong>Smart Hostel</strong> delivers a unified digital administration architecture:
+              centralized room and bed inventory, a live 7-day dining schedule editor, and automatic AI-assisted
+              classification for electrical, plumbing, and carpentry maintenance requests.
             </p>
 
-            {/* Checklist */}
+            {/* Core Architectural Pillars */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <CheckCircle size={20} color="#10b981" />
                 <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
-                  24-Hour Maximum Turnaround for Critical Maintenance
+                  Target Response: Priority-Driven Rapid Maintenance Routing
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <CheckCircle size={20} color="#10b981" />
                 <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
-                  100% Student Participation in Mess Nutrition Reviews
+                  Transparent Dining: Live Real-Time Weekly Meal Schedules
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <CheckCircle size={20} color="#10b981" />
                 <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
-                  Transparent Warden Resolution Log with Verified Timestamps
+                  Role-Protected Architecture: Enforced via Cloud Firestore Security Rules
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Statistics & Highlights Box */}
+          {/* Right Column: Platform Specifications */}
           <div
             style={{
               background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
@@ -95,10 +93,10 @@ export const AboutUs: React.FC = () => {
               <Building2 size={32} color="#818cf8" />
               <div>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
-                  Campus Hostel Network
+                  Hostel Management Network
                 </h3>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
-                  Operational Impact &amp; Metrics
+                  Product Architecture Specifications
                 </p>
               </div>
             </div>
@@ -113,30 +111,30 @@ export const AboutUs: React.FC = () => {
             >
               <div style={{ borderLeft: '3px solid #6366f1', paddingLeft: '14px' }}>
                 <div className="font-display" style={{ fontSize: '2.2rem', fontWeight: 800, color: '#ffffff' }}>
-                  1,450+
+                  1,000+
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Hostel Residents Managed</div>
+                <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Designed Resident Capacity</div>
               </div>
 
               <div style={{ borderLeft: '3px solid #10b981', paddingLeft: '14px' }}>
                 <div className="font-display" style={{ fontSize: '2.2rem', fontWeight: 800, color: '#34d399' }}>
-                  98.4%
+                  24h
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Issues Resolved in &lt; 24h</div>
+                <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Target Maintenance SLA</div>
               </div>
 
               <div style={{ borderLeft: '3px solid #f59e0b', paddingLeft: '14px' }}>
                 <div className="font-display" style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fbbf24' }}>
-                  4 Blocks
+                  Multi-Wing
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Blocks A, B, C &amp; Dining Hall</div>
               </div>
 
               <div style={{ borderLeft: '3px solid #ec4899', paddingLeft: '14px' }}>
                 <div className="font-display" style={{ fontSize: '2.2rem', fontWeight: 800, color: '#f472b6' }}>
-                  3 Daily
+                  4 Daily
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Mess Quality Checks</div>
+                <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Dining Meals (Breakfast to Dinner)</div>
               </div>
             </div>
 
@@ -153,7 +151,7 @@ export const AboutUs: React.FC = () => {
               }}
             >
               <Award size={24} color="#38bdf8" style={{ flexShrink: 0 }} />
-              <span>Awarded Best University Living Facility &amp; Digital Governance 2025</span>
+              <span>Architected for University Residence Hall Administration &amp; Governance</span>
             </div>
           </div>
         </div>

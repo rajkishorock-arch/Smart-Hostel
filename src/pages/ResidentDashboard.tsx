@@ -28,14 +28,13 @@ export const ResidentDashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Subscribe to tickets in real-time
-    const unsubscribe = subscribeTickets(allTickets => {
-      // In Firestore rules, resident only views their own tickets
-      const residentTickets = allTickets.filter(
-        t => t.residentId === user.uid || t.room === user.roomNumber
-      );
-      setTickets(residentTickets);
-    });
+    // Subscribe to tickets in real-time matching Firestore security rules
+    const unsubscribe = subscribeTickets(
+      allTickets => {
+        setTickets(allTickets);
+      },
+      { role: 'resident', uid: user.uid }
+    );
 
     setRooms(getStoredRooms());
 

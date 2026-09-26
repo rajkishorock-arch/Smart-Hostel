@@ -1,26 +1,26 @@
 import React from 'react';
-import { Star, Quote } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 export const Testimonials: React.FC = () => {
   const reviews = [
     {
-      name: 'Aayush Malhotra',
-      role: '3rd Year CSE • Block A, Room 204',
-      quote: 'When my room fan started making strange burning smells last term, I logged it on Smart Hostel at 11 PM. The AI auto-flagged it as Electrical Urgent. The warden dispatched the campus electrician by 9 AM next morning. Unbeatable speed!',
+      name: 'Aayush M.',
+      role: 'Student Resident Persona • Block A, Room 204',
+      quote: 'When my room fan had a burning smell, lodging it on the portal triggered the AI classifier to flag it as Electrical Urgent. The warden resolution board immediately picked up the priority ticket.',
       rating: 5,
       avatar: 'AM'
     },
     {
-      name: 'Dr. Rajeshwar Sundaram',
-      role: 'Chief Hostel Warden • Campus Admin',
-      quote: 'Managing 1,400+ students across four hostel wings used to be a nightmare of handwritten chits. With Smart Hostel, our maintenance board gives us live oversight of plumbing, electrical, and carpentry requests with zero lost tickets.',
+      name: 'Dr. R. Sundaram',
+      role: 'Chief Warden Persona • Administration Desk',
+      quote: 'Managing student blocks used to rely on handwritten chits. The Maintenance Resolution Board gives instant oversight of electrical, plumbing, and carpentry requests with verified resolution notes.',
       rating: 5,
       avatar: 'RS'
     },
     {
-      name: 'Pooja Venkatesh',
-      role: 'Student Mess Committee Head • Block B',
-      quote: 'The weekly mess menu editor allows us to update the breakfast and dinner menus instantly. Students always know what is being served before walking into the dining hall, which reduced food wastage significantly.',
+      name: 'Pooja V.',
+      role: 'Mess Committee Persona • Dining Wing',
+      quote: 'The weekly mess menu editor allows wardens to publish breakfast, lunch, and dinner menus instantly. Residents check timings before arriving, which keeps the dining schedule organized.',
       rating: 5,
       avatar: 'PV'
     }
@@ -40,7 +40,7 @@ export const Testimonials: React.FC = () => {
               letterSpacing: '0.08em'
             }}
           >
-            Verified Campus Feedback
+            User Experience Personas
           </span>
           <h2
             className="font-display"
@@ -52,10 +52,10 @@ export const Testimonials: React.FC = () => {
               marginBottom: '16px'
             }}
           >
-            Trusted by Residents &amp; Administration
+            Role-Based Workflows in Action
           </h2>
           <p style={{ color: '#64748b', fontSize: '1.05rem', lineHeight: 1.6 }}>
-            Real experiences from students, wardens, and mess committee members who use the system daily.
+            Illustrative workflow scenarios demonstrating how residents, wardens, and mess administrators interact with the platform.
           </p>
         </div>
 

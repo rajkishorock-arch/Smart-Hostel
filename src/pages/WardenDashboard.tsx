@@ -32,10 +32,13 @@ export const WardenDashboard: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Subscribe to all tickets (Wardens have full administrative read/write access)
-    const unsubTickets = subscribeTickets(allTickets => {
-      setTickets(allTickets);
-    });
+    // 1. Subscribe to all tickets (Wardens have administrative access across all tickets)
+    const unsubTickets = subscribeTickets(
+      allTickets => {
+        setTickets(allTickets);
+      },
+      { role: 'warden', uid: user?.uid || '' }
+    );
 
     // 2. Subscribe to room records
     const unsubRooms = subscribeRooms(allRooms => {
