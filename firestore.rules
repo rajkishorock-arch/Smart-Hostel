@@ -85,7 +85,19 @@ service cloud.firestore {
       allow write: if isWarden();
     }
 
-    // 5. Default Deny All Other Collections
+    // 5. Announcements Collection
+    match /announcements/{annId} {
+      allow read: if isAuthenticated();
+      allow write: if isWarden();
+    }
+
+    // 6. Mess Schedule Collection
+    match /mess_schedule/{schId} {
+      allow read: if isAuthenticated();
+      allow write: if isWarden();
+    }
+
+    // 7. Default Deny All Other Collections
     match /{document=**} {
       allow read, write: if false;
     }

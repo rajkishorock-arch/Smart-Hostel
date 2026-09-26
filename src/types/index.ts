@@ -70,3 +70,24 @@ export interface RoomRecord {
   beds: BedAllocation[];
   floor: number;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  category: 'Mess' | 'Hostel' | 'Maintenance' | 'General';
+  published: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  author: string;
+}
+
+export interface MealScheduleItem {
+  id: string;
+  meal: 'Breakfast' | 'Lunch' | 'Snacks' | 'Dinner';
+  name: string;
+  startTime: string;
+  endTime: string;
+  status: 'Active' | 'Upcoming' | 'Completed';
+  location: string;
+}

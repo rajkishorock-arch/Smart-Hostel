@@ -242,3 +242,72 @@ export const DEMO_USERS: Record<string, UserProfile> = {
     createdAt: new Date().toISOString()
   }
 };
+
+export const INITIAL_ANNOUNCEMENTS = [
+  {
+    id: 'ann-1',
+    title: 'Festive Special Dinner & Timing Extension',
+    content: 'Special Diwali/Hostel Fest feast arranged this coming Friday. Mess timings extended until 10:15 PM. Sweet boxes distributed to all residents.',
+    category: 'Mess' as const,
+    published: true,
+    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    author: 'Warden Mess Committee'
+  },
+  {
+    id: 'ann-2',
+    title: 'Scheduled Water Tank Cleaning & Maintenance',
+    content: 'Overhead solar and drinking water tanks in Block B and Block C will undergo mandatory chemical sterilization on Saturday between 09:00 AM and 01:00 PM.',
+    category: 'Maintenance' as const,
+    published: true,
+    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+    author: 'Estate & Maintenance Cell'
+  },
+  {
+    id: 'ann-3',
+    title: 'Draft: Revised Quiet Hours for Mid-Semester Exams',
+    content: 'Proposed library and corridor quiet hours starting at 10:00 PM during upcoming assessment weeks. Feedback open till Wednesday.',
+    category: 'Hostel' as const,
+    published: false,
+    createdAt: new Date(Date.now() - 3600000 * 72).toISOString(),
+    author: 'Chief Warden Office'
+  }
+];
+
+export const INITIAL_MEAL_SCHEDULE = [
+  {
+    id: 'sch-1',
+    meal: 'Breakfast' as const,
+    name: 'Morning Nutri-Breakfast',
+    startTime: '07:30 AM',
+    endTime: '09:30 AM',
+    status: 'Completed' as const,
+    location: 'Ground Floor Dining Hall A'
+  },
+  {
+    id: 'sch-2',
+    meal: 'Lunch' as const,
+    name: 'Full Nutrition Lunch Buffet',
+    startTime: '12:30 PM',
+    endTime: '02:30 PM',
+    status: 'Active' as const,
+    location: 'Ground Floor Dining Hall A & B'
+  },
+  {
+    id: 'sch-3',
+    meal: 'Snacks' as const,
+    name: 'Evening High Tea & Snacks',
+    startTime: '05:00 PM',
+    endTime: '06:00 PM',
+    status: 'Upcoming' as const,
+    location: 'Mess Cafeteria Counter'
+  },
+  {
+    id: 'sch-4',
+    meal: 'Dinner' as const,
+    name: 'Chef Special Balanced Dinner',
+    startTime: '07:30 PM',
+    endTime: '09:30 PM',
+    status: 'Upcoming' as const,
+    location: 'Ground Floor Dining Hall A'
+  }
+];

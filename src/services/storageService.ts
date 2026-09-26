@@ -1,5 +1,5 @@
-import { DayMenu, RoomRecord, Ticket, UserProfile, WeeklyMessMenu, UserRole } from '../types';
-import { DEMO_USERS, INITIAL_MESS_MENU, INITIAL_ROOMS, INITIAL_TICKETS } from './mockData';
+import { DayMenu, RoomRecord, Ticket, UserProfile, WeeklyMessMenu, UserRole, Announcement, MealScheduleItem } from '../types';
+import { DEMO_USERS, INITIAL_MESS_MENU, INITIAL_ROOMS, INITIAL_TICKETS, INITIAL_ANNOUNCEMENTS, INITIAL_MEAL_SCHEDULE } from './mockData';
 import { db, isFirebaseConfigured } from './firebase';
 import {
   collection,
@@ -18,7 +18,9 @@ const KEYS = {
   CURRENT_USER: 'sh_current_user_v1',
   TICKETS: 'sh_tickets_v1',
   MESS_MENU: 'sh_mess_menu_v1',
-  ROOMS: 'sh_rooms_v1'
+  ROOMS: 'sh_rooms_v1',
+  ANNOUNCEMENTS: 'sh_announcements_v1',
+  SCHEDULE: 'sh_schedule_v1'
 };
 
 // Event triggers for local real-time reactivity
@@ -26,6 +28,8 @@ export const EVENT_TICKETS_CHANGED = 'sh_tickets_updated';
 export const EVENT_MENU_CHANGED = 'sh_menu_updated';
 export const EVENT_ROOMS_CHANGED = 'sh_rooms_updated';
 export const EVENT_AUTH_CHANGED = 'sh_auth_updated';
+export const EVENT_ANNOUNCEMENTS_CHANGED = 'sh_announcements_updated';
+export const EVENT_SCHEDULE_CHANGED = 'sh_schedule_updated';
 
 function triggerEvent(eventName: string) {
   window.dispatchEvent(new Event(eventName));
@@ -312,4 +316,165 @@ export function subscribeRooms(callback: (rooms: RoomRecord[]) => void): () => v
   return () => {
     window.removeEventListener(EVENT_ROOMS_CHANGED, handleLocal);
   };
+}
+
+export async function allocateBed(
+  roomId: string,
+  bedNumber: string,
+  resident: { uid: string; name: string; studentId?: string }
+): Promise<boolean> {
+  const rooms = getStoredRooms();
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return false;
+
+  // Release any existing bed for this resident
+  rooms.forEach(rm => {
+    rm.beds.forEach(b => {
+      if (b.residentId === resident.uid) {
+        delete b.residentId;
+        delete b.residentName;
+        delete b.studentId;
+      }
+    });
+    rm.occupied = rm.beds.filter(b => !!b.residentId).length;
+  });
+
+  const bed = room.beds.find(b => b.bedNumber === bedNumber);
+  if (!bed) return false;
+
+  bed.residentId = resident.uid;
+  bed.residentName = resident.name;
+  bed.studentId = resident.studentId || `STD-${resident.uid.slice(0, 5)}`;
+  room.occupied = room.beds.filter(b => !!b.residentId).length;
+
+  await saveRooms(rooms);
+
+  // Also update user profile room/bed
+  const users = getStoredUsers();
+  if (users[resident.uid]) {
+    users[resident.uid].roomNumber = room.roomNumber;
+    users[resident.uid].block = room.block;
+    users[resident.uid].bedNumber = bedNumber;
+    saveStoredUser(users[resident.uid]);
+  }
+
+  return true;
+}
+
+export async function releaseBed(roomId: string, bedNumber: string): Promise<boolean> {
+  const rooms = getStoredRooms();
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return false;
+
+  const bed = room.beds.find(b => b.bedNumber === bedNumber);
+  if (!bed) return false;
+
+  const residentUid = bed.residentId;
+  delete bed.residentId;
+  delete bed.residentName;
+  delete bed.studentId;
+  room.occupied = room.beds.filter(b => !!b.residentId).length;
+
+  await saveRooms(rooms);
+
+  if (residentUid) {
+    const users = getStoredUsers();
+    if (users[residentUid]) {
+      users[residentUid].roomNumber = 'Unassigned';
+      users[residentUid].bedNumber = 'Unassigned';
+      saveStoredUser(users[residentUid]);
+    }
+  }
+
+  return true;
+}
+
+// ----------------- ANNOUNCEMENTS STORAGE -----------------
+
+export function getStoredAnnouncements(): Announcement[] {
+  try {
+    const raw = localStorage.getItem(KEYS.ANNOUNCEMENTS);
+    if (!raw) {
+      localStorage.setItem(KEYS.ANNOUNCEMENTS, JSON.stringify(INITIAL_ANNOUNCEMENTS));
+      return INITIAL_ANNOUNCEMENTS;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return INITIAL_ANNOUNCEMENTS;
+  }
+}
+
+export async function saveAnnouncement(ann: Announcement): Promise<Announcement> {
+  const list = getStoredAnnouncements();
+  const idx = list.findIndex(a => a.id === ann.id);
+  if (idx >= 0) {
+    list[idx] = { ...ann, updatedAt: new Date().toISOString() };
+  } else {
+    list.unshift(ann);
+  }
+  localStorage.setItem(KEYS.ANNOUNCEMENTS, JSON.stringify(list));
+  triggerEvent(EVENT_ANNOUNCEMENTS_CHANGED);
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'announcements', ann.id), ann);
+    } catch (e) {
+      console.warn('Firestore announcement sync error:', e);
+    }
+  }
+  return ann;
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
+  const list = getStoredAnnouncements().filter(a => a.id !== id);
+  localStorage.setItem(KEYS.ANNOUNCEMENTS, JSON.stringify(list));
+  triggerEvent(EVENT_ANNOUNCEMENTS_CHANGED);
+}
+
+export function subscribeAnnouncements(
+  callback: (list: Announcement[]) => void,
+  publishedOnly: boolean = false
+): () => void {
+  const notify = () => {
+    const all = getStoredAnnouncements();
+    callback(publishedOnly ? all.filter(a => a.published) : all);
+  };
+  window.addEventListener(EVENT_ANNOUNCEMENTS_CHANGED, notify);
+  notify();
+  return () => window.removeEventListener(EVENT_ANNOUNCEMENTS_CHANGED, notify);
+}
+
+// ----------------- MEAL SCHEDULE STORAGE -----------------
+
+export function getStoredMealSchedule(): MealScheduleItem[] {
+  try {
+    const raw = localStorage.getItem(KEYS.SCHEDULE);
+    if (!raw) {
+      localStorage.setItem(KEYS.SCHEDULE, JSON.stringify(INITIAL_MEAL_SCHEDULE));
+      return INITIAL_MEAL_SCHEDULE;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return INITIAL_MEAL_SCHEDULE;
+  }
+}
+
+export async function saveMealSchedule(schedule: MealScheduleItem[]): Promise<void> {
+  localStorage.setItem(KEYS.SCHEDULE, JSON.stringify(schedule));
+  triggerEvent(EVENT_SCHEDULE_CHANGED);
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'mess_schedule', 'daily'), { schedule });
+    } catch (e) {
+      console.warn('Firestore meal schedule sync error:', e);
+    }
+  }
+}
+
+export function subscribeMealSchedule(callback: (list: MealScheduleItem[]) => void): () => void {
+  const notify = () => callback(getStoredMealSchedule());
+  window.addEventListener(EVENT_SCHEDULE_CHANGED, notify);
+  notify();
+  return () => window.removeEventListener(EVENT_SCHEDULE_CHANGED, notify);
 }
