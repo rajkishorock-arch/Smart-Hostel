@@ -247,3 +247,47 @@ export interface VendorRecord {
   paymentTerms: string;
 }
 
+export interface AutomationWorkflow {
+  id: string;
+  title: string;
+  trigger: string;
+  condition: string;
+  action: string;
+  enabled: boolean;
+  runCount: number;
+  lastRunAt?: string;
+  category: 'Escalation' | 'Billing' | 'Allocation' | 'Maintenance' | 'Security';
+}
+
+export interface SecurityThreatAlert {
+  id: string;
+  threatType: 'Brute Force Attempt' | 'Suspicious IP' | 'Tamper Attempt' | 'Privilege Escalation';
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  sourceIp: string;
+  timestamp: string;
+  status: 'Blocked' | 'Investigating' | 'Mitigated';
+  details: string;
+}
+
+export interface WebhookEndpoint {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  secretKey: string;
+  active: boolean;
+  lastDeliveredAt?: string;
+  deliverySuccessRate: number; // percentage
+}
+
+export interface StudentChurnRisk {
+  studentUid: string;
+  studentName: string;
+  roomNumber: string;
+  churnRiskScore: number; // 0-100%
+  riskLevel: 'High' | 'Medium' | 'Low';
+  riskFactors: string[];
+  recommendedIntervention: string;
+}
+
+

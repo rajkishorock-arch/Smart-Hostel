@@ -31,6 +31,9 @@ import { PreventiveMaintenancePage } from './pages/admin/PreventiveMaintenancePa
 import { BillingManagementPage } from './pages/admin/BillingManagementPage';
 import { SmartInfrastructurePage } from './pages/admin/SmartInfrastructurePage';
 import { VendorManagementPage } from './pages/admin/VendorManagementPage';
+import { WorkflowAutomationPage } from './pages/admin/WorkflowAutomationPage';
+import { ComplianceSecurityPage } from './pages/admin/ComplianceSecurityPage';
+import { DeveloperPortalPage } from './pages/admin/DeveloperPortalPage';
 
 // Resident Portal Pages
 import { ResidentOverviewPage } from './pages/resident/ResidentOverviewPage';
@@ -234,6 +237,32 @@ export function App() {
             element={
               <ProtectedRoute allowedRole="warden">
                 <VendorManagementPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Tier-3 Systems: Automation, Compliance, Developer APIs */}
+          <Route
+            path="/admin/automation"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <WorkflowAutomationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/compliance"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <ComplianceSecurityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/developer"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <DeveloperPortalPage />
               </ProtectedRoute>
             }
           />

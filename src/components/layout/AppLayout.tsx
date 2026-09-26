@@ -33,7 +33,9 @@ import {
   Moon,
   CreditCard,
   Radio,
-  Truck
+  Truck,
+  Workflow,
+  Code2
 } from 'lucide-react';
 import { SmartHostelAIAssistant } from '../common/SmartHostelAIAssistant';
 import { NotificationBell } from '../common/NotificationBell';
@@ -343,6 +345,32 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               >
                 <Truck size={18} color={location.pathname === '/admin/vendors' ? 'var(--brand-purple)' : undefined} />
                 <span>Vendors &amp; Supplies</span>
+              </NavLink>
+
+              <div className="sidebar-nav-section" style={{ marginTop: '16px' }}>Advanced Automation &amp; Governance</div>
+              <NavLink
+                to="/admin/automation"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <Workflow size={18} color={location.pathname === '/admin/automation' ? 'var(--brand-purple)' : undefined} />
+                <span>Workflow Automation</span>
+              </NavLink>
+              <NavLink
+                to="/admin/compliance"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <ShieldCheck size={18} color={location.pathname === '/admin/compliance' ? 'var(--brand-purple)' : undefined} />
+                <span>Compliance &amp; Security</span>
+              </NavLink>
+              <NavLink
+                to="/admin/developer"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <Code2 size={18} color={location.pathname === '/admin/developer' ? 'var(--brand-purple)' : undefined} />
+                <span>Developer APIs &amp; Webhooks</span>
               </NavLink>
             </>
           ) : (

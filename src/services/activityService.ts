@@ -12,6 +12,10 @@ import {
 const LOCAL_KEY = 'sh_activity_logs_v1';
 export const EVENT_ACTIVITY_CHANGED = 'sh_activity_updated';
 
+export function getActivityLogs(): ActivityLog[] {
+  return getStoredActivityLogs();
+}
+
 function getStoredActivityLogs(): ActivityLog[] {
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
