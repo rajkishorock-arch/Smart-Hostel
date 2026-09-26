@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { useAuth } from '../../context/AuthContext';
-import { Ticket } from '../../types';
+import { Ticket, TicketStatus } from '../../types';
 import { subscribeTickets } from '../../services/storageService';
 import {
   Ticket as TicketIcon,
@@ -13,8 +13,25 @@ import {
   FileText,
   ShieldCheck,
   Search,
-  Sparkles
+  Sparkles,
+  ShieldAlert,
+  UserCheck,
+  Check,
+  CircleDot
 } from 'lucide-react';
+
+const LIFECYCLE_STAGES: TicketStatus[] = [
+  'Open',
+  'AI Classified',
+  'Assigned',
+  'In Progress',
+  'Resolved'
+];
+
+function getStageIndex(status: TicketStatus): number {
+  const idx = LIFECYCLE_STAGES.indexOf(status);
+  return idx === -1 ? 0 : idx;
+}
 
 export const ResidentTicketsPage: React.FC = () => {
   const { user } = useAuth();
@@ -34,7 +51,6 @@ export const ResidentTicketsPage: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
-    // Subscribe to tickets strictly scoped to resident uid
     const unsub = subscribeTickets(
       all => setTickets(all),
       { role: 'resident', uid: user.uid }
@@ -46,7 +62,8 @@ export const ResidentTicketsPage: React.FC = () => {
     return (
       t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.description.toLowerCase().includes(searchQuery.toLowerCase())
+      t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.title && t.title.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
 
@@ -97,7 +114,7 @@ export const ResidentTicketsPage: React.FC = () => {
             My Maintenance Tickets
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: '0.875rem', color: 'var(--neutral-muted)' }}>
-            Real-time status updates, technician appointments, and resolution notes from the Warden Desk.
+            Real-time status updates, visible lifecycle timeline, technician assignment, and resolution sign-offs.
           </p>
         </div>
 
@@ -113,7 +130,8 @@ export const ResidentTicketsPage: React.FC = () => {
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            boxShadow: '0 2px 4px rgba(245, 158, 11, 0.25)'
           }}
         >
           <PlusCircle size={16} /> Report New Issue
@@ -150,12 +168,12 @@ export const ResidentTicketsPage: React.FC = () => {
         />
         <input
           type="text"
-          placeholder="Search tickets by ID, category, keyword..."
+          placeholder="Search by ticket ID, issue, category..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           style={{
             width: '100%',
-            padding: '9px 12px 9px 36px',
+            padding: '10px 14px 10px 38px',
             borderRadius: '8px',
             border: '1px solid var(--neutral-border)',
             fontSize: '0.85rem',
@@ -164,24 +182,25 @@ export const ResidentTicketsPage: React.FC = () => {
         />
       </div>
 
-      {/* Tickets Cards List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+      {/* Tickets List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {filteredTickets.length === 0 ? (
           <div
             style={{
-              padding: '48px',
-              textAlign: 'center',
               background: '#ffffff',
-              borderRadius: '14px',
               border: '1px solid var(--neutral-border)',
-              color: 'var(--neutral-muted)'
+              borderRadius: '14px',
+              padding: '48px 24px',
+              textAlign: 'center',
+              boxShadow: 'var(--shadow-xs)'
             }}
           >
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--neutral-dark)', marginBottom: '6px' }}>
-              No maintenance tickets filed yet
-            </div>
-            <p style={{ fontSize: '0.86rem', margin: '0 0 16px 0' }}>
-              If your ceiling fan, washbasin, or study furniture requires repair, lodge a ticket now.
+            <TicketIcon size={36} color="var(--neutral-muted)" style={{ margin: '0 auto 12px' }} />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0 }}>
+              No maintenance tickets found
+            </h3>
+            <p style={{ fontSize: '0.84rem', color: 'var(--neutral-muted)', margin: '6px 0 16px' }}>
+              You do not have any registered complaints matching the filter.
             </p>
             <Link
               to="/resident/maintenance/report"
@@ -189,11 +208,11 @@ export const ResidentTicketsPage: React.FC = () => {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '9px 18px',
+                padding: '8px 16px',
                 borderRadius: '8px',
                 background: 'var(--maint-primary)',
                 color: '#ffffff',
-                fontSize: '0.84rem',
+                fontSize: '0.82rem',
                 fontWeight: 700
               }}
             >
@@ -201,126 +220,246 @@ export const ResidentTicketsPage: React.FC = () => {
             </Link>
           </div>
         ) : (
-          filteredTickets.map(t => (
-            <div
-              key={t.id}
-              style={{
-                background: '#ffffff',
-                border: '1px solid var(--neutral-border)',
-                borderRadius: '14px',
-                padding: '24px',
-                boxShadow: 'var(--shadow-xs)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--neutral-dark)' }}>
-                    #{t.id}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      background: '#f1f5f9',
-                      color: '#334155'
-                    }}
-                  >
-                    {t.category}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      background: t.priority === 'Urgent' ? '#fef2f2' : t.priority === 'High' ? '#fffbeb' : '#f8fafc',
-                      color: t.priority === 'Urgent' ? '#dc2626' : t.priority === 'High' ? '#d97706' : '#64748b'
-                    }}
-                  >
-                    {t.priority} Priority
-                  </span>
-                  {t.aiClassified && (
+          filteredTickets.map(t => {
+            const currentStageIndex = getStageIndex(t.status);
+
+            return (
+              <div
+                key={t.id}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid var(--neutral-border)',
+                  borderRadius: '14px',
+                  padding: '24px',
+                  boxShadow: 'var(--shadow-xs)'
+                }}
+              >
+                {/* Header Row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--neutral-dark)' }}>
+                      #{t.id}
+                    </span>
                     <span
                       style={{
                         fontSize: '0.72rem',
                         fontWeight: 800,
                         padding: '2px 8px',
                         borderRadius: '6px',
-                        background: '#fef3c7',
-                        color: '#92400e',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px'
+                        background: '#f1f5f9',
+                        color: '#334155'
                       }}
                     >
-                      <Sparkles size={11} color="#d97706" /> AI Classified
+                      {t.category}
                     </span>
-                  )}
-                </div>
-
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    padding: '3px 10px',
-                    borderRadius: '12px',
-                    background:
-                      t.status === 'Resolved' ? '#dcfce7' : t.status === 'In Progress' ? '#dbeafe' : '#fef3c7',
-                    color:
-                      t.status === 'Resolved' ? '#15803d' : t.status === 'In Progress' ? '#1d4ed8' : '#b45309'
-                  }}
-                >
-                  ● {t.status}
-                </span>
-              </div>
-
-              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--neutral-dark)', margin: '0 0 10px 0', lineHeight: 1.5 }}>
-                {t.description}
-              </h2>
-
-              {(t.aiSummary || t.aiSuggestedAction) && (
-                <div
-                  style={{
-                    background: '#fefce8',
-                    border: '1px solid #fef08a',
-                    borderRadius: '8px',
-                    padding: '10px 14px',
-                    margin: '10px 0',
-                    fontSize: '0.82rem',
-                    color: '#713f12'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 800, color: '#854d0e', marginBottom: '3px' }}>
-                    <Sparkles size={12} color="#d97706" /> AI Triage Assessment
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background:
+                          t.priority === 'Critical'
+                            ? '#fef2f2'
+                            : t.priority === 'High'
+                            ? '#fffbeb'
+                            : '#f8fafc',
+                        color:
+                          t.priority === 'Critical'
+                            ? '#dc2626'
+                            : t.priority === 'High'
+                            ? '#d97706'
+                            : '#64748b'
+                      }}
+                    >
+                      {t.priority} Priority
+                    </span>
+                    {t.aiClassified && (
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}
+                      >
+                        <Sparkles size={11} color="#d97706" /> AI Classified
+                      </span>
+                    )}
                   </div>
-                  {t.aiSummary && <div><strong>Summary:</strong> {t.aiSummary}</div>}
-                  {t.aiSuggestedAction && <div style={{ marginTop: '2px', color: '#854d0e' }}><strong>Action:</strong> {t.aiSuggestedAction}</div>}
-                </div>
-              )}
 
-              {t.wardenNotes && (
-                <div
-                  style={{
-                    background: '#f8fafc',
-                    border: '1px solid var(--neutral-border)',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    margin: '12px 0',
-                    fontSize: '0.84rem',
-                    color: '#334155'
-                  }}
-                >
-                  <strong style={{ color: 'var(--maint-primary)' }}>Warden Desk Note:</strong> {t.wardenNotes}
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      background:
+                        t.status === 'Resolved'
+                          ? '#dcfce7'
+                          : t.status === 'In Progress' || t.status === 'Assigned'
+                          ? '#dbeafe'
+                          : '#fef3c7',
+                      color:
+                        t.status === 'Resolved'
+                          ? '#15803d'
+                          : t.status === 'In Progress' || t.status === 'Assigned'
+                          ? '#1d4ed8'
+                          : '#b45309'
+                    }}
+                  >
+                    ● {t.status}
+                  </span>
                 </div>
-              )}
 
-              <div style={{ fontSize: '0.74rem', color: 'var(--neutral-muted)', marginTop: '10px' }}>
-                Lodge Date: {new Date(t.createdAt).toLocaleString()} • Room {t.room} ({t.block})
+                {/* Title & Description */}
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: '0 0 6px 0' }}>
+                  {t.title}
+                </h3>
+                <p style={{ fontSize: '0.86rem', color: '#4b5563', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+                  {t.description}
+                </p>
+
+                {/* Safety Alert Banner */}
+                {(t.safetyAlert || t.priority === 'Critical') && (
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      background: '#fff1f2',
+                      border: '1px solid #fecaca',
+                      marginBottom: '14px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px'
+                    }}
+                  >
+                    <ShieldAlert size={18} color="#dc2626" style={{ marginTop: '2px', flexShrink: 0 }} />
+                    <div style={{ fontSize: '0.8rem', color: '#991b1b' }}>
+                      <strong style={{ display: 'block', marginBottom: '2px' }}>Safety Priority Incident:</strong>
+                      {t.safetyAlert || 'Sparks, high leakage, or danger detected. Turn off mains if safe to do so. Warden and technicians have been notified.'}
+                    </div>
+                  </div>
+                )}
+
+                {/* Assigned Technician Banner */}
+                {t.assignedTo && (
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      background: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      marginBottom: '14px',
+                      fontSize: '0.8rem',
+                      color: '#1e40af',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <UserCheck size={16} />
+                    <span><strong>Assigned Technician:</strong> {t.assignedTo}</span>
+                  </div>
+                )}
+
+                {/* ============================================================ */}
+                {/* VISIBLE TICKET TIMELINE (Feature 5 Lifecycle)                */}
+                {/* ============================================================ */}
+                <div style={{ marginTop: '16px', marginBottom: '16px', padding: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--neutral-dark)', marginBottom: '12px' }}>
+                    Ticket Lifecycle Timeline:
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+                    {LIFECYCLE_STAGES.map((stage, sIdx) => {
+                      const isCompleted = sIdx < currentStageIndex;
+                      const isCurrent = sIdx === currentStageIndex;
+                      const timelineEvent = t.timeline?.find(ev => ev.status === stage);
+
+                      return (
+                        <div key={stage} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, position: 'relative' }}>
+                          {/* Connector Line */}
+                          {sIdx > 0 && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '12px',
+                                right: '50%',
+                                left: '-50%',
+                                height: '3px',
+                                background: sIdx <= currentStageIndex ? 'var(--brand-blue)' : '#cbd5e1',
+                                zIndex: 1
+                              }}
+                            />
+                          )}
+
+                          {/* Circle Indicator */}
+                          <div
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              background: isCompleted ? 'var(--brand-blue)' : isCurrent ? '#ffffff' : '#f1f5f9',
+                              border: isCurrent ? '2px solid var(--brand-blue)' : isCompleted ? 'none' : '1px solid #cbd5e1',
+                              color: isCompleted ? '#ffffff' : isCurrent ? 'var(--brand-blue)' : '#94a3b8',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.7rem',
+                              fontWeight: 800,
+                              zIndex: 2,
+                              marginBottom: '6px'
+                            }}
+                          >
+                            {isCompleted ? <Check size={12} /> : isCurrent ? <CircleDot size={12} /> : sIdx + 1}
+                          </div>
+
+                          <div style={{ fontSize: '0.72rem', fontWeight: isCurrent ? 800 : 600, color: isCurrent ? 'var(--brand-blue)' : '#64748b', textAlign: 'center' }}>
+                            {stage}
+                          </div>
+                          {timelineEvent && (
+                            <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '2px' }}>
+                              {new Date(timelineEvent.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Resolution / Warden Notes */}
+                {(t.resolutionNote || t.wardenNotes) && (
+                  <div
+                    style={{
+                      background: t.status === 'Resolved' ? '#f0fdf4' : '#f8fafc',
+                      border: `1px solid ${t.status === 'Resolved' ? '#bbf7d0' : 'var(--neutral-border)'}`,
+                      borderRadius: '8px',
+                      padding: '12px 16px',
+                      margin: '12px 0',
+                      fontSize: '0.84rem',
+                      color: t.status === 'Resolved' ? '#166534' : '#334155'
+                    }}
+                  >
+                    <strong style={{ color: t.status === 'Resolved' ? '#15803d' : 'var(--maint-primary)' }}>
+                      {t.status === 'Resolved' ? 'Official Resolution Note:' : 'Warden Desk Update:'}
+                    </strong>{' '}
+                    {t.resolutionNote || t.wardenNotes}
+                  </div>
+                )}
+
+                <div style={{ fontSize: '0.74rem', color: 'var(--neutral-muted)', marginTop: '10px' }}>
+                  Lodge Date: {new Date(t.createdAt).toLocaleString()} • Room {t.roomNumber || t.room} ({t.block})
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </AppLayout>

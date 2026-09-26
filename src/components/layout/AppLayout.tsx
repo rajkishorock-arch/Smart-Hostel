@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -25,9 +25,12 @@ import {
   PlusCircle,
   ChevronRight,
   Bell,
-  Home
+  Home,
+  Search
 } from 'lucide-react';
 import { SmartHostelAIAssistant } from '../common/SmartHostelAIAssistant';
+import { NotificationBell } from '../common/NotificationBell';
+import { GlobalSearchModal } from '../common/GlobalSearchModal';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -44,6 +47,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Global search shortcut Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -470,8 +486,48 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
           </div>
 
-          {/* Right Header Badges */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Right Header Badges & Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Global Search trigger for Warden */}
+            {isWarden && (
+              <button
+                id="global-search-btn"
+                onClick={() => setIsSearchOpen(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--neutral-border)',
+                  background: '#f8fafc',
+                  color: 'var(--neutral-muted)',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+                title="Global Warden Search (Ctrl+K)"
+              >
+                <Search size={14} />
+                <span className="search-label">Search...</span>
+                <kbd
+                  style={{
+                    fontSize: '0.65rem',
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    padding: '1px 4px',
+                    color: '#64748b'
+                  }}
+                >
+                  Ctrl K
+                </kbd>
+              </button>
+            )}
+
+            {/* Real-time Notification Bell */}
+            <NotificationBell />
+
             <span
               style={{
                 fontSize: '0.72rem',
@@ -507,6 +563,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
         {/* Floating Role-Aware SmartHostel AI Assistant */}
         <SmartHostelAIAssistant />
+
+        {/* Global Search Modal */}
+        <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </div>
     </div>
   );

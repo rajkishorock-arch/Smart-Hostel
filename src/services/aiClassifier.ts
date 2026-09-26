@@ -8,6 +8,7 @@ export interface AIClassificationResult {
   confidence: number;
   reasoning: string;
   matchedKeywords: string[];
+  safetyAlert?: string;
 }
 
 const CATEGORY_RULES: Record<
@@ -26,7 +27,7 @@ const CATEGORY_RULES: Record<
       'current', 'shock', 'voltage', 'burning smell', 'smoke', 'flicker', 'flickering'
     ],
     secondary: ['smell', 'trip', 'tripped', 'dead', 'blown', 'buzzing', 'heat'],
-    urgencyTriggers: ['burning smell', 'smoke', 'spark', 'sparking', 'shock', 'short circuit', 'fire']
+    urgencyTriggers: ['burning smell', 'smoke', 'spark', 'sparking', 'shock', 'short circuit', 'fire', 'exposed wire']
   },
   Plumbing: {
     primary: [
@@ -47,17 +48,44 @@ const CATEGORY_RULES: Record<
     secondary: ['broken', 'loose', 'jammed', 'stuck', 'fell off', 'creaking', 'hinge broken', 'cracked'],
     urgencyTriggers: ['lock jammed', 'cannot lock', 'door off hinges', 'glass broken', 'shattered']
   },
+  Cleaning: {
+    primary: [
+      'trash', 'dustbin', 'garbage', 'dirty', 'mop', 'sweep', 'dust', 'stain',
+      'spill', 'washroom dirty', 'corridor dirty', 'litter', 'foul smell', 'sanitation',
+      'clean', 'cleaning', 'pest', 'cockroach', 'insects', 'bedbug', 'rat', 'rodent'
+    ],
+    secondary: ['messy', 'smelly', 'unhygienic', 'bad odor', 'infestation'],
+    urgencyTriggers: ['biohazard', 'overflowing garbage', 'severe dirt', 'severe infestation']
+  },
+  Infrastructure: {
+    primary: [
+      'wall', 'ceiling', 'plaster', 'paint', 'cracking', 'crack', 'seepage',
+      'dampness', 'window pane', 'glass pane', 'tile', 'flooring', 'roof',
+      'staircase', 'railing', 'balcony', 'lift', 'elevator', 'water tank', 'corridor'
+    ],
+    secondary: ['peeling', 'chipped', 'loose tile', 'damp', 'crevice'],
+    urgencyTriggers: ['ceiling collapse', 'falling plaster', 'broken railing', 'structural crack', 'lift stuck']
+  },
   Other: {
     primary: [
-      'paint', 'painting', 'pest', 'cockroach', 'insects', 'bedbug', 'rat',
-      'cleaning', 'dustbin', 'garbage', 'trash', 'mirror', 'curtain', 'mattress'
+      'mirror', 'curtain', 'mattress', 'pillow', 'blanket', 'white wash',
+      'mosquito net', 'notice board', 'bell'
     ],
-    secondary: ['dirty', 'stain', 'white wash', 'dampness', 'infestation'],
-    urgencyTriggers: ['infestation', 'hazardous', 'snake']
+    secondary: ['stain', 'general', 'facility'],
+    urgencyTriggers: ['hazardous', 'snake']
   }
 };
 
-const HIGH_PRIORITY_TERMS = ['urgent', 'emergency', 'immediately', 'danger', 'burning', 'spark', 'shock', 'flood', 'continuous', 'severe'];
+const SAFETY_CRITICAL_TRIGGERS = [
+  'spark', 'sparking', 'exposed wire', 'smoke', 'gas smell', 'gas leak',
+  'burning smell', 'electrical burning', 'fire', 'shock', 'electric shock',
+  'short circuit', 'flooding', 'burst pipe', 'pipe burst', 'ceiling collapse', 'lift stuck'
+];
+
+const HIGH_PRIORITY_TERMS = [
+  'urgent', 'emergency', 'immediately', 'danger', 'burning', 'spark',
+  'shock', 'flood', 'continuous', 'severe', 'critical'
+];
 
 /**
  * Synchronous local classifier that adheres strictly to the Smart Maintenance AI schema.
@@ -79,10 +107,26 @@ export function classifyTicketLocally(text: string, room?: string): SmartMainten
     };
   }
 
+  // 1. Safety Critical Check
+  let safetyAlert: string | undefined = undefined;
+  const isSafetyCritical = SAFETY_CRITICAL_TRIGGERS.some(trigger => normalized.includes(trigger));
+
+  if (isSafetyCritical) {
+    if (normalized.includes('spark') || normalized.includes('shock') || normalized.includes('wire') || normalized.includes('burning') || normalized.includes('smoke') || normalized.includes('fire')) {
+      safetyAlert = '⚠️ ELECTRICAL SAFETY HAZARD: Switch off room power breaker immediately. Do NOT touch appliances or wires. Alert the Hostel Office and Warden Desk immediately.';
+    } else if (normalized.includes('flood') || normalized.includes('burst pipe')) {
+      safetyAlert = '⚠️ PLUMBING EMERGENCY: Shut off the nearest water isolation valve. Keep electrical gadgets off the floor. Report immediately to Hostel Desk.';
+    } else {
+      safetyAlert = '⚠️ CRITICAL SAFETY NOTICE: Maintain safe distance. Do NOT attempt repairs yourself. Warden Desk notified for emergency dispatch.';
+    }
+  }
+
   const scores: Record<TicketCategory, { score: number; matches: string[] }> = {
     Electrical: { score: 0, matches: [] },
     Plumbing: { score: 0, matches: [] },
     Carpentry: { score: 0, matches: [] },
+    Cleaning: { score: 0, matches: [] },
+    Infrastructure: { score: 0, matches: [] },
     Other: { score: 0, matches: [] }
   };
 
@@ -123,73 +167,61 @@ export function classifyTicketLocally(text: string, room?: string): SmartMainten
     }
   }
 
-  const totalScore = Object.values(scores).reduce((acc, curr) => acc + curr.score, 0);
-  let confidence = 75;
-  if (totalScore > 0) {
-    confidence = Math.min(96, Math.max(70, Math.round((maxScore / (totalScore * 0.75 || 1)) * 100)));
-  }
+  const matchedKeywords = Array.from(new Set(scores[bestCategory].matches));
 
-  // Priority and Urgency determination
-  let priority: TicketPriority = 'Medium';
-  let urgency: 'Low' | 'Medium' | 'High' = 'Medium';
+  // Determine Priority
+  let priority: TicketPriority = 'Low';
+  let urgency: 'Low' | 'Medium' | 'High' = 'Low';
 
-  const isSevereElectrical = normalized.includes('spark') || normalized.includes('shock') || normalized.includes('burning') || normalized.includes('smoke') || normalized.includes('fire');
-  const isSeverePlumbing = normalized.includes('flood') || normalized.includes('burst') || normalized.includes('continuous');
-  const isSecurityConcern = normalized.includes('cannot lock') || normalized.includes('lock jammed');
-
-  if (isSevereElectrical || isSeverePlumbing || isSecurityConcern) {
-    priority = isSevereElectrical ? 'Urgent' : 'High';
+  if (isSafetyCritical) {
+    priority = 'Critical';
     urgency = 'High';
-  } else if (HIGH_PRIORITY_TERMS.some(t => normalized.includes(t)) || maxScore >= 6) {
-    priority = 'High';
-    urgency = 'High';
-  } else if (maxScore <= 2) {
-    priority = 'Low';
-    urgency = 'Low';
-  }
-
-  // Formulate concise summary and safe operational recommendation
-  let summary = '';
-  let suggestedAction = '';
-  let reasoning = '';
-
-  const roomText = room ? `in Room ${room}` : 'in hostel quarters';
-
-  if (bestCategory === 'Electrical') {
-    if (isSevereElectrical) {
-      summary = `Urgent electrical hazard (sparking/short-circuit) ${roomText}.`;
-      suggestedAction = 'Do not touch switches or fixtures. Keep distance and await emergency electrician dispatch.';
-      reasoning = 'Severe hazard keywords (sparking/burning/shock) detect active electrical danger requiring immediate intervention.';
-      confidence = 94;
-    } else {
-      summary = `Electrical appliance or fixture malfunction reported ${roomText}.`;
-      suggestedAction = 'Inspect circuit supply, switch contacts, and fan/lighting motor connections.';
-      reasoning = `Keywords indicate an electrical fixture issue (${scores.Electrical.matches.slice(0, 3).join(', ')}).`;
-      confidence = Math.max(confidence, 88);
-    }
-  } else if (bestCategory === 'Plumbing') {
-    if (isSeverePlumbing) {
-      summary = `Active water leakage or plumbing breakdown detected ${roomText}.`;
-      suggestedAction = 'Isolate main supply line if accessible; plumbing maintenance team dispatched immediately.';
-      reasoning = `Keywords indicate continuous or severe water leakage (${scores.Plumbing.matches.slice(0, 3).join(', ')}).`;
-      confidence = Math.max(confidence, 91);
-    } else {
-      summary = `Plumbing and water fixture maintenance required ${roomText}.`;
-      suggestedAction = 'Check faucet valve, pipe joints, and washbasin trap for seal replacement.';
-      reasoning = `Keywords indicate plumbing fixture maintenance (${scores.Plumbing.matches.slice(0, 3).join(', ')}).`;
-      confidence = Math.max(confidence, 86);
-    }
-  } else if (bestCategory === 'Carpentry') {
-    summary = `Structural woodwork or furniture repair required ${roomText}.`;
-    suggestedAction = 'Inspect hinges, wooden frame integrity, and hardware fittings for repair or replacement.';
-    reasoning = `Keywords indicate damaged door, frame, or furniture elements (${scores.Carpentry.matches.slice(0, 3).join(', ')}).`;
-    confidence = Math.max(confidence, 89);
   } else {
-    summary = `General residential maintenance request logged ${roomText}.`;
-    suggestedAction = 'Hostel supervisor will inspect and assign the relevant utility contractor.';
-    reasoning = 'Description does not match primary trade keywords; categorized for general maintenance triage.';
-    confidence = 75;
+    const matchedUrgentTriggers = CATEGORY_RULES[bestCategory].urgencyTriggers.filter(t =>
+      normalized.includes(t)
+    );
+    const hasHighPriorityWord = HIGH_PRIORITY_TERMS.some(t => normalized.includes(t));
+
+    if (matchedUrgentTriggers.length > 0) {
+      priority = 'Critical';
+      urgency = 'High';
+    } else if (hasHighPriorityWord || maxScore >= 6) {
+      priority = 'High';
+      urgency = 'High';
+    } else if (maxScore >= 3) {
+      priority = 'Medium';
+      urgency = 'Medium';
+    } else {
+      priority = 'Low';
+      urgency = 'Low';
+    }
   }
+
+  // Base confidence calculation
+  let confidence = Math.min(96, Math.max(55, Math.round(55 + maxScore * 7)));
+  if (matchedKeywords.length === 0) confidence = 50;
+
+  // Operational Action Suggestions
+  let suggestedAction = 'Physical assessment by hostel maintenance team.';
+  if (isSafetyCritical) {
+    suggestedAction = 'Emergency dispatch: duty technician dispatched within 30 minutes.';
+  } else if (bestCategory === 'Electrical') {
+    suggestedAction = 'Licensed campus electrician scheduled for room inspection.';
+  } else if (bestCategory === 'Plumbing') {
+    suggestedAction = 'Sanitary plumber assigned for fixture repair/clearing.';
+  } else if (bestCategory === 'Carpentry') {
+    suggestedAction = 'Campus carpenter assigned for hardware realignment/replacement.';
+  } else if (bestCategory === 'Cleaning') {
+    suggestedAction = 'Housekeeping staff dispatched for sanitation and cleanup.';
+  } else if (bestCategory === 'Infrastructure') {
+    suggestedAction = 'Estate civil maintenance team notified for physical inspection.';
+  }
+
+  const reasoning = matchedKeywords.length > 0
+    ? `Identified key markers: [${matchedKeywords.slice(0, 3).join(', ')}] indicative of ${bestCategory.toLowerCase()} maintenance.`
+    : `General issue description. Defaulting to ${bestCategory} based on standard facilities matrix.`;
+
+  const summary = `${bestCategory} issue in Room ${room || 'unit'}: ${normalized.slice(0, 60)}${normalized.length > 60 ? '...' : ''}`;
 
   return {
     category: bestCategory,
@@ -199,6 +231,7 @@ export function classifyTicketLocally(text: string, room?: string): SmartMainten
     suggestedAction,
     reasoning,
     confidence,
+    safetyAlert,
     source: 'local_fallback'
   };
 }
@@ -206,7 +239,6 @@ export function classifyTicketLocally(text: string, room?: string): SmartMainten
 /**
  * Main AI Assistant Entry Point:
  * Calls the secure server-side endpoint (/api/maintenance-ai).
- * Never exposes API keys to client JavaScript.
  * Automatically falls back to the intelligent local classifier on failure.
  */
 export async function analyzeMaintenanceWithAI(
@@ -238,33 +270,40 @@ export async function analyzeMaintenanceWithAI(
 
     if (response.ok) {
       const data = await response.json();
-      const validCategories: TicketCategory[] = ['Electrical', 'Plumbing', 'Carpentry', 'Other'];
-      const validPriorities: TicketPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
-      const validUrgencies: Array<'Low' | 'Medium' | 'High'> = ['Low', 'Medium', 'High'];
+      const validCategories: TicketCategory[] = [
+        'Electrical',
+        'Plumbing',
+        'Carpentry',
+        'Cleaning',
+        'Infrastructure',
+        'Other'
+      ];
+      const validPriorities: TicketPriority[] = ['Critical', 'High', 'Medium', 'Low', 'Urgent'];
 
       if (
         data &&
         validCategories.includes(data.category) &&
         validPriorities.includes(data.priority)
       ) {
+        // Normalize Urgent -> Critical if returned
+        const priority: TicketPriority = data.priority === 'Urgent' ? 'Critical' : data.priority;
         return {
           category: data.category,
-          priority: data.priority,
-          urgency: validUrgencies.includes(data.urgency) ? data.urgency : 'Medium',
+          priority,
+          urgency: data.urgency || 'Medium',
           summary: data.summary || `${data.category} issue reported.`,
           suggestedAction: data.suggestedAction || 'Warden dispatch required for physical assessment.',
           reasoning: data.reasoning || `Detected markers aligning with ${data.category.toLowerCase()} maintenance.`,
           confidence: Math.min(98, Math.max(50, Number(data.confidence) || 90)),
+          safetyAlert: data.safetyAlert,
           source: data.source === 'gemini' ? 'gemini' : 'local_fallback'
         };
       }
     }
   } catch (err) {
-    // Network failure, timeout, or server unavailable - graceful degradation
     console.info('API triage unavailable, executing local Smart Maintenance classification:', err);
   }
 
-  // Graceful rule-based local classification fallback
   return classifyTicketLocally(cleanDesc, room);
 }
 
@@ -278,6 +317,7 @@ export function classifyTicketText(text: string): AIClassificationResult {
     priority: res.priority,
     confidence: res.confidence,
     reasoning: res.reasoning,
-    matchedKeywords: []
+    matchedKeywords: [],
+    safetyAlert: res.safetyAlert
   };
 }

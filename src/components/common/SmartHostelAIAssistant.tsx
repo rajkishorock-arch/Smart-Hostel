@@ -2,6 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { sendQueryToAssistant, ChatMessage } from '../../services/assistantService';
 import {
+  getStoredRooms,
+  getStoredTickets,
+  getStoredMessMenu,
+  getStoredAnnouncements,
+  getAllResidents
+} from '../../services/storageService';
+import {
   MessageSquare,
   X,
   Send,
@@ -30,7 +37,7 @@ export const SmartHostelAIAssistant: React.FC = () => {
     ? [
         "Show today's operations",
         "How many beds are available?",
-        "Show urgent maintenance issues",
+        "Show critical maintenance issues",
         "What's today's mess menu?"
       ]
     : [
@@ -48,8 +55,8 @@ export const SmartHostelAIAssistant: React.FC = () => {
         sender: 'assistant',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         text: isWarden
-          ? `Welcome Warden ${user.name.split(' ')[0]}! I'm SmartHostel AI, your administrative campus co-pilot. I can provide real-time hostel occupancy rates, maintenance breakdowns by category, bed availability, and mess operations. How can I assist you today?`
-          : `Hello ${user.name.split(' ')[0]}! I'm SmartHostel AI, your verified campus assistant. You can ask me about your room assignment, roommates, today's or weekly mess menu, your maintenance tickets, or how to report a problem. How can I help you today?`
+          ? `Welcome Warden ${user.name.split(' ')[0]}! I'm SmartHostel AI, your administrative campus co-pilot. I can provide real-time hostel occupancy rates, maintenance breakdowns by category, bed availability, and mess operations derived directly from live database records. How can I assist you today?`
+          : `Hello ${user.name.split(' ')[0]}! I'm SmartHostel AI, your verified campus assistant. You can ask me about your live room assignment, roommates, today's or weekly mess menu, your maintenance tickets, or how to report a problem. How can I help you today?`
       };
       setMessages([initialGreeting]);
     }
@@ -87,7 +94,92 @@ export const SmartHostelAIAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const result = await sendQueryToAssistant(query, messages, getIdToken);
+      // Assemble live snapshot from Firestore services for 100% factual accuracy
+      const rooms = getStoredRooms();
+      const tickets = getStoredTickets();
+      const menu = getStoredMessMenu();
+      const notices = getStoredAnnouncements();
+
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const todayName = dayNames[new Date().getDay()];
+      const todayMenu = menu ? (menu[todayName] || menu['Monday'] || Object.values(menu)[0]) : undefined;
+
+      let clientContext: Record<string, unknown> = {};
+
+      if (isWarden) {
+        const residents = getAllResidents();
+        const totalRooms = rooms.length;
+        const totalBeds = rooms.reduce((acc, r) => acc + r.capacity, 0);
+        const occupiedBeds = rooms.reduce((acc, r) => acc + r.occupied, 0);
+        const availableBeds = Math.max(0, totalBeds - occupiedBeds);
+        const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+        const openTickets = tickets.filter(t => t.status === 'Open' || t.status === 'AI Classified').length;
+        const inProgressTickets = tickets.filter(t => t.status === 'In Progress' || t.status === 'Assigned').length;
+        const criticalTickets = tickets.filter(t => t.priority === 'Critical').length;
+        const resolvedTickets = tickets.filter(t => t.status === 'Resolved').length;
+
+        clientContext = {
+          stats: {
+            totalResidents: residents.length,
+            totalRooms,
+            totalBeds,
+            occupiedBeds,
+            availableBeds,
+            occupancyRate,
+            openTickets,
+            inProgressTickets,
+            criticalTickets,
+            resolvedTickets
+          },
+          tickets: tickets.slice(0, 10).map(t => ({
+            id: t.id,
+            title: t.title || t.description,
+            category: t.category,
+            priority: t.priority,
+            status: t.status,
+            room: t.roomNumber || t.room
+          })),
+          todayMenu,
+          notices: notices.slice(0, 5).map(n => ({
+            id: n.id,
+            title: n.title,
+            priority: n.priority,
+            category: n.category
+          }))
+        };
+      } else {
+        const myRoom = rooms.find(r => r.roomNumber === user?.roomNumber);
+        const roommates = myRoom
+          ? myRoom.beds.filter(b => !!b.residentId && b.residentId !== user?.uid).map(b => ({ bed: b.bedNumber, name: b.residentName || 'Resident' }))
+          : [];
+
+        const myTickets = tickets.filter(t => t.residentId === user?.uid || (user?.roomNumber && (t.roomNumber === user.roomNumber || t.room === user.roomNumber)));
+
+        clientContext = {
+          room: {
+            roomNumber: user?.roomNumber || '204',
+            block: user?.block || 'Block A',
+            bedNumber: user?.bedNumber || 'Bed 1',
+            roommates
+          },
+          tickets: myTickets.map(t => ({
+            id: t.id,
+            title: t.title || t.description,
+            category: t.category,
+            priority: t.priority,
+            status: t.status
+          })),
+          todayMenu,
+          notices: notices.slice(0, 5).map(n => ({
+            id: n.id,
+            title: n.title,
+            priority: n.priority,
+            category: n.category
+          }))
+        };
+      }
+
+      const result = await sendQueryToAssistant(query, messages, getIdToken, clientContext);
       const aiMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'assistant',

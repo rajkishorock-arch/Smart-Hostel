@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
-import { UserProfile } from '../../types';
-import { getStoredUsers } from '../../services/storageService';
+import { UserProfile, Ticket } from '../../types';
+import { getStoredUsers, getStoredTickets } from '../../services/storageService';
 import {
   Users,
   Search,
@@ -15,11 +15,14 @@ import {
   Bed,
   CheckCircle,
   KeyRound,
-  ArrowRight
+  ArrowRight,
+  Wrench,
+  ShieldCheck
 } from 'lucide-react';
 
 export const HostelResidentsPage: React.FC = () => {
   const [residents, setResidents] = useState<UserProfile[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [blockFilter, setBlockFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -28,6 +31,7 @@ export const HostelResidentsPage: React.FC = () => {
   useEffect(() => {
     const all = getStoredUsers();
     setResidents(Object.values(all).filter(u => u.role === 'resident'));
+    setTickets(getStoredTickets());
   }, []);
 
   const filteredResidents = residents.filter(res => {
@@ -208,6 +212,7 @@ export const HostelResidentsPage: React.FC = () => {
               <th>Hostel / Block</th>
               <th>Room</th>
               <th>Bed</th>
+              <th>Active Tickets</th>
               <th>Status</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
@@ -215,13 +220,16 @@ export const HostelResidentsPage: React.FC = () => {
           <tbody>
             {filteredResidents.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--neutral-muted)' }}>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: 'var(--neutral-muted)' }}>
                   No resident records match your search query.
                 </td>
               </tr>
             ) : (
               filteredResidents.map(res => {
                 const isAllocated = !!res.roomNumber && res.roomNumber !== 'Unassigned';
+                const residentTickets = tickets.filter(t => t.residentId === res.uid || t.residentName === res.name);
+                const activeComplaints = residentTickets.filter(t => t.status !== 'Resolved').length;
+
                 return (
                   <tr key={res.uid}>
                     <td>
@@ -237,6 +245,20 @@ export const HostelResidentsPage: React.FC = () => {
                       </strong>
                     </td>
                     <td>{isAllocated ? res.bedNumber || 'Bed 1' : '—'}</td>
+                    <td>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: activeComplaints > 0 ? '#fef3c7' : '#f1f5f9',
+                          color: activeComplaints > 0 ? '#b45309' : '#64748b'
+                        }}
+                      >
+                        {activeComplaints} active
+                      </span>
+                    </td>
                     <td>
                       <span
                         style={{
@@ -366,6 +388,18 @@ export const HostelResidentsPage: React.FC = () => {
                   {selectedResident.roomNumber
                     ? `Allocated: Room ${selectedResident.roomNumber} (${selectedResident.bedNumber || 'Bed 1'})`
                     : 'Unallocated (No bed assigned yet)'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Wrench size={16} color="var(--neutral-muted)" />
+                <span style={{ fontSize: '0.86rem', color: 'var(--neutral-dark)' }}>
+                  Active Complaints: {tickets.filter(t => (t.residentId === selectedResident.uid || t.residentName === selectedResident.name) && t.status !== 'Resolved').length} pending ticket(s)
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ShieldCheck size={16} color="#16a34a" />
+                <span style={{ fontSize: '0.86rem', color: '#16a34a', fontWeight: 600 }}>
+                  Account Status: Active Student (Enrolled &amp; Verified)
                 </span>
               </div>
             </div>

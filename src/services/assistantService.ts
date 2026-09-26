@@ -20,7 +20,8 @@ export interface AssistantApiResponse {
 export async function sendQueryToAssistant(
   message: string,
   history: ChatMessage[],
-  getIdToken: () => Promise<string | null>
+  getIdToken: () => Promise<string | null>,
+  clientContext?: Record<string, unknown>
 ): Promise<AssistantApiResponse> {
   const cleanMessage = (message || '').trim();
   if (!cleanMessage) {
@@ -53,7 +54,8 @@ export async function sendQueryToAssistant(
       },
       body: JSON.stringify({
         message: cleanMessage,
-        history: formattedHistory
+        history: formattedHistory,
+        clientContext
       })
     });
 

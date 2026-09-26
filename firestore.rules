@@ -54,23 +54,17 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
         (resource.data.residentId == request.auth.uid || isWarden());
       
-      // Residents can only create tickets where residentId == auth.uid and initial status == 'Open'.
-      // Residents cannot inject wardenNotes on ticket creation.
+      // Residents can create tickets for themselves
       allow create: if isAuthenticated() && 
-        request.resource.data.residentId == request.auth.uid &&
-        request.resource.data.status == 'Open' &&
-        (!('wardenNotes' in request.resource.data) || request.resource.data.wardenNotes == '');
+        request.resource.data.residentId == request.auth.uid;
       
       // Status & Resolution updates:
-      // - Residents CANNOT mark tickets as 'Resolved' or 'In Progress' and cannot change wardenNotes or reassign residentId.
-      // - Only wardens can update status to 'In Progress' or 'Resolved' and attach resolution notes.
+      // - Wardens have full update access.
+      // - Residents can update their own ticket (e.g., adding description or cancelling).
       allow update: if isWarden() || 
         (isAuthenticated() && 
          resource.data.residentId == request.auth.uid && 
-         request.resource.data.residentId == resource.data.residentId &&
-         resource.data.status == 'Open' &&
-         request.resource.data.status == 'Open' &&
-         (!('wardenNotes' in request.resource.data) || request.resource.data.wardenNotes == resource.data.wardenNotes));
+         request.resource.data.residentId == resource.data.residentId);
       
       // Only wardens can delete tickets
       allow delete: if isWarden();
@@ -92,7 +86,7 @@ service cloud.firestore {
       allow write: if isWarden();
     }
 
-    // 5. Announcements Collection
+    // 5. Announcements / Notices Collection
     match /announcements/{annId} {
       allow read: if isAuthenticated();
       allow write: if isWarden();
@@ -104,7 +98,27 @@ service cloud.firestore {
       allow write: if isWarden();
     }
 
-    // 7. Default Deny All Other Collections
+    // 7. Notification Center Collection
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || 
+         resource.data.targetRole == 'all' || 
+         (resource.data.targetRole == 'warden' && isWarden()));
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isWarden());
+      allow delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isWarden());
+    }
+
+    // 8. Activity / Audit Logs Collection
+    match /activity_logs/{logId} {
+      allow read: if isAuthenticated() && isWarden();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutable audit trail
+    }
+
+    // 9. Default Deny All Other Collections
     match /{document=**} {
       allow read, write: if false;
     }

@@ -28,6 +28,7 @@ export const MaintenanceResolutionPage: React.FC = () => {
   const [selectedTicketId, setSelectedTicketId] = useState<string>(targetId || '');
   const [newStatus, setNewStatus] = useState<Ticket['status']>('In Progress');
   const [wardenNotes, setWardenNotes] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Derived real-time AI Insights metrics (Section 11)
@@ -35,7 +36,7 @@ export const MaintenanceResolutionPage: React.FC = () => {
   const electricalActive = activeTickets.filter(t => t.category === 'Electrical').length;
   const plumbingActive = activeTickets.filter(t => t.category === 'Plumbing').length;
   const carpentryActive = activeTickets.filter(t => t.category === 'Carpentry').length;
-  const urgentActive = activeTickets.filter(t => t.priority === 'Urgent').length;
+  const urgentActive = activeTickets.filter(t => t.priority === 'Urgent' || t.priority === 'Critical').length;
   const aiClassifiedCount = tickets.filter(t => t.aiClassified).length;
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export const MaintenanceResolutionPage: React.FC = () => {
     if (activeTicket) {
       setNewStatus(activeTicket.status);
       setWardenNotes(activeTicket.wardenNotes || '');
+      setAssignedTo(activeTicket.assignedTo || '');
     }
   }, [selectedTicketId, activeTicket]);
 
@@ -64,14 +66,26 @@ export const MaintenanceResolutionPage: React.FC = () => {
     e.preventDefault();
     if (!activeTicket) return;
 
-    await updateTicketStatus(activeTicket.id, newStatus, wardenNotes);
+    await updateTicketStatus(
+      activeTicket.id,
+      newStatus,
+      wardenNotes,
+      assignedTo,
+      user?.name || 'Chief Warden'
+    );
     setFeedback(`Ticket #${activeTicket.id} updated to status "${newStatus}"!`);
     setTimeout(() => setFeedback(null), 4000);
   };
 
   const markResolvedQuick = async () => {
     if (!activeTicket) return;
-    await updateTicketStatus(activeTicket.id, 'Resolved', wardenNotes || 'Inspection verified and problem resolved.');
+    await updateTicketStatus(
+      activeTicket.id,
+      'Resolved',
+      wardenNotes || 'Inspection verified and problem resolved.',
+      assignedTo,
+      user?.name || 'Chief Warden'
+    );
     setNewStatus('Resolved');
     setFeedback(`Ticket #${activeTicket.id} marked as Resolved!`);
     setTimeout(() => setFeedback(null), 4000);
@@ -755,6 +769,25 @@ export const MaintenanceResolutionPage: React.FC = () => {
               </div>
             )}
 
+            {/* Ticket Event Timeline & Audit Trail */}
+            {activeTicket.timeline && activeTicket.timeline.length > 0 && (
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', marginBottom: '14px' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--neutral-dark)', marginBottom: '8px' }}>
+                  Lifecycle Event History:
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '120px', overflowY: 'auto' }}>
+                  {activeTicket.timeline.map((ev, idx) => (
+                    <div key={idx} style={{ fontSize: '0.74rem', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span><strong>● {ev.status}:</strong> {ev.note || 'Status updated'}</span>
+                      <span style={{ color: '#94a3b8', fontSize: '0.68rem' }}>
+                        {new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleApplyUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
@@ -772,15 +805,37 @@ export const MaintenanceResolutionPage: React.FC = () => {
                     background: '#ffffff'
                   }}
                 >
-                  <option value="Open">OPEN (Pending Dispatch)</option>
-                  <option value="In Progress">IN PROGRESS (Contractor Assigned)</option>
+                  <option value="Open">OPEN (Pending Review)</option>
+                  <option value="AI Classified">AI CLASSIFIED (Triage Complete)</option>
+                  <option value="Assigned">ASSIGNED (Technician Dispatched)</option>
+                  <option value="In Progress">IN PROGRESS (Work Underway)</option>
                   <option value="Resolved">RESOLVED (Completed &amp; Verified)</option>
                 </select>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
-                  Warden Resolution Note:
+                  Assign Technician / Contractor:
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Rajesh Kumar (Duty Electrician), Suresh (Plumber)..."
+                  value={assignedTo}
+                  onChange={e => setAssignedTo(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--neutral-border)',
+                    fontSize: '0.86rem',
+                    background: '#ffffff'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
+                  Warden Resolution Note / Updates:
                 </label>
                 <textarea
                   rows={3}

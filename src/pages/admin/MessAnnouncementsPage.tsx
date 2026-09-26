@@ -24,7 +24,9 @@ export const MessAnnouncementsPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState<'Mess' | 'Hostel' | 'Maintenance' | 'General'>('Mess');
+  const [category, setCategory] = useState<'Mess' | 'Hostel' | 'Maintenance' | 'General' | 'Emergency'>('Mess');
+  const [priority, setPriority] = useState<'Low' | 'Medium' | 'High' | 'Critical'>('Medium');
+  const [expiryAt, setExpiryAt] = useState('');
   const [published, setPublished] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -39,6 +41,8 @@ export const MessAnnouncementsPage: React.FC = () => {
     setTitle('');
     setContent('');
     setCategory('Mess');
+    setPriority('Medium');
+    setExpiryAt('');
     setPublished(true);
     setIsModalOpen(true);
   };
@@ -46,8 +50,10 @@ export const MessAnnouncementsPage: React.FC = () => {
   const openEditModal = (ann: Announcement) => {
     setEditingId(ann.id);
     setTitle(ann.title);
-    setContent(ann.content);
+    setContent(ann.content || ann.description || '');
     setCategory(ann.category);
+    setPriority((ann.priority as any) || 'Medium');
+    setExpiryAt(ann.expiryAt ? ann.expiryAt.slice(0, 10) : '');
     setPublished(ann.published);
     setIsModalOpen(true);
   };
@@ -60,7 +66,10 @@ export const MessAnnouncementsPage: React.FC = () => {
       id: editingId || `ann-${Date.now()}`,
       title,
       content,
+      description: content,
       category,
+      priority,
+      expiryAt: expiryAt ? new Date(expiryAt).toISOString() : undefined,
       published,
       createdAt: editingId
         ? announcements.find(a => a.id === editingId)?.createdAt || new Date().toISOString()
@@ -223,6 +232,34 @@ export const MessAnnouncementsPage: React.FC = () => {
                   >
                     {ann.category}
                   </span>
+                  {ann.priority && (
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: ann.priority === 'Critical' ? '#fee2e2' : ann.priority === 'High' ? '#fef3c7' : '#f1f5f9',
+                        color: ann.priority === 'Critical' ? '#dc2626' : ann.priority === 'High' ? '#b45309' : '#475569'
+                      }}
+                    >
+                      {ann.priority}
+                    </span>
+                  )}
+                  {ann.expiryAt && (
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: new Date(ann.expiryAt).getTime() < Date.now() ? '#fee2e2' : '#f1f5f9',
+                        color: new Date(ann.expiryAt).getTime() < Date.now() ? '#b91c1c' : '#64748b'
+                      }}
+                    >
+                      {new Date(ann.expiryAt).getTime() < Date.now() ? 'Expired' : `Expires: ${new Date(ann.expiryAt).toLocaleDateString()}`}
+                    </span>
+                  )}
                   <span
                     style={{
                       fontSize: '0.72rem',
@@ -233,7 +270,7 @@ export const MessAnnouncementsPage: React.FC = () => {
                       color: ann.published ? '#15803d' : '#64748b'
                     }}
                   >
-                    {ann.published ? '● Published (Visible to Residents)' : '○ Draft (Hidden)'}
+                    {ann.published ? '● Published' : '○ Draft'}
                   </span>
                 </div>
 
@@ -393,6 +430,36 @@ export const MessAnnouncementsPage: React.FC = () => {
                     <option value="Maintenance">Maintenance & Utilities</option>
                     <option value="General">General Notice</option>
                   </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
+                    Priority Level:
+                  </label>
+                  <select
+                    value={priority}
+                    onChange={e => setPriority(e.target.value as any)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--neutral-border)', fontSize: '0.85rem', background: '#ffffff' }}
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical / Urgent</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
+                    Expiry Date (Optional):
+                  </label>
+                  <input
+                    type="date"
+                    value={expiryAt}
+                    onChange={e => setExpiryAt(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--neutral-border)', fontSize: '0.85rem', background: '#ffffff' }}
+                  />
                 </div>
 
                 <div>
