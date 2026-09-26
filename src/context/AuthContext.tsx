@@ -56,27 +56,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn('Firestore profile lookup error:', err);
           }
 
-          // If in demo mode and email is demo account
-          if (import.meta.env.VITE_DEMO_MODE === 'true' && (fbUser.email === 'demo-warden@hostel.edu' || fbUser.email === 'demo-resident@hostel.edu')) {
-            const demoRole: UserRole = fbUser.email === 'demo-warden@hostel.edu' ? 'warden' : 'resident';
-            const demoProfile: UserProfile = {
-              uid: fbUser.uid,
-              email: fbUser.email,
-              name: demoRole === 'warden' ? 'Demo Warden' : 'Demo Resident',
-              role: demoRole,
-              phone: '+91 98000 00000',
-              hostel: 'Aravali Residence Hall',
-              block: demoRole === 'warden' ? 'Administration' : 'Block A',
-              roomNumber: demoRole === 'warden' ? 'Office-01' : '204',
-              bedNumber: demoRole === 'warden' ? 'N/A' : 'Bed 2',
-              createdAt: new Date().toISOString()
-            };
-            setUser(demoProfile);
-            setStoredCurrentUser(demoProfile);
-            setLoading(false);
-            return;
-          }
-
           // No verified profile document in Firestore: reject and sign out immediately
           await firebaseSignOut(auth).catch(() => {});
           setUser(null);
@@ -120,26 +99,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (!matchedUser) {
-            // Profile does not exist in Firestore
-            if (import.meta.env.VITE_DEMO_MODE === 'true' && (cleanEmail === 'demo-warden@hostel.edu' || cleanEmail === 'demo-resident@hostel.edu')) {
-              const demoRole: UserRole = cleanEmail === 'demo-warden@hostel.edu' ? 'warden' : 'resident';
-              matchedUser = {
-                uid: cred.user.uid,
-                email: cleanEmail,
-                name: demoRole === 'warden' ? 'Demo Warden' : 'Demo Resident',
-                role: demoRole,
-                phone: '+91 98000 00000',
-                hostel: 'Aravali Residence Hall',
-                block: demoRole === 'warden' ? 'Administration' : 'Block A',
-                roomNumber: demoRole === 'warden' ? 'Office-01' : '204',
-                bedNumber: demoRole === 'warden' ? 'N/A' : 'Bed 2',
-                createdAt: new Date().toISOString()
-              };
-            } else {
-              // Sign out immediately and display error message
-              await firebaseSignOut(auth).catch(() => {});
-              throw new Error('Your account profile could not be verified. Please register your account profile or contact hostel administration.');
-            }
+            // Document missing in Firestore: Reject and immediately sign out
+            await firebaseSignOut(auth).catch(() => {});
+            throw new Error('Your account profile could not be verified. Please register your account profile or contact hostel administration.');
           }
         } catch (fbErr: any) {
           if (
@@ -283,8 +245,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (import.meta.env.VITE_DEMO_MODE !== 'true') {
       throw new Error('Demo login access is disabled in production.');
     }
-    const demoEmail = role === 'warden' ? 'demo-warden@hostel.edu' : 'demo-resident@hostel.edu';
-    const demoPassword = 'Hostel@2026Demo';
+    const demoEmail = role === 'warden' 
+      ? (import.meta.env.VITE_DEMO_WARDEN_EMAIL || 'demo-warden@hostel.edu') 
+      : (import.meta.env.VITE_DEMO_RESIDENT_EMAIL || 'demo-resident@hostel.edu');
+    const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
+    if (!demoPassword) {
+      throw new Error('Demo mode is enabled but VITE_DEMO_PASSWORD is not configured in environment.');
+    }
     return login(demoEmail, demoPassword, role);
   };
 

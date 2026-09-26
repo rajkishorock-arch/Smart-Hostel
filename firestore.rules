@@ -32,14 +32,17 @@ service cloud.firestore {
         request.resource.data.uid == userId;
 
       // Profile updates:
-      // - Normal user: can update contact info, but CANNOT change role, UID, roomNumber, or bedNumber.
-      // - Warden: authorized to modify roles or room assignments.
+      // - Normal user: can update contact details (name, phone, email), but CANNOT change role, UID, roomNumber, bedNumber, block, hostel, or account status.
+      // - Warden: authorized to modify administrative fields and room assignments.
       allow update: if isAuthenticated() && 
         (isWarden() || (isOwner(userId) && 
           request.resource.data.role == resource.data.role &&
           request.resource.data.uid == resource.data.uid &&
           (!('roomNumber' in request.resource.data) || request.resource.data.roomNumber == resource.data.roomNumber) &&
-          (!('bedNumber' in request.resource.data) || request.resource.data.bedNumber == resource.data.bedNumber)));
+          (!('bedNumber' in request.resource.data) || request.resource.data.bedNumber == resource.data.bedNumber) &&
+          (!('block' in request.resource.data) || request.resource.data.block == resource.data.block) &&
+          (!('hostel' in request.resource.data) || request.resource.data.hostel == resource.data.hostel) &&
+          (!('status' in request.resource.data) || request.resource.data.status == resource.data.status)));
 
       // Only wardens can delete user records
       allow delete: if isWarden();
@@ -51,13 +54,15 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
         (resource.data.residentId == request.auth.uid || isWarden());
       
-      // Residents can only create tickets where residentId == auth.uid and initial status == 'Open'
+      // Residents can only create tickets where residentId == auth.uid and initial status == 'Open'.
+      // Residents cannot inject wardenNotes on ticket creation.
       allow create: if isAuthenticated() && 
         request.resource.data.residentId == request.auth.uid &&
-        request.resource.data.status == 'Open';
+        request.resource.data.status == 'Open' &&
+        (!('wardenNotes' in request.resource.data) || request.resource.data.wardenNotes == '');
       
       // Status & Resolution updates:
-      // - Residents CANNOT mark tickets as 'Resolved' or 'In Progress' and cannot change wardenNotes.
+      // - Residents CANNOT mark tickets as 'Resolved' or 'In Progress' and cannot change wardenNotes or reassign residentId.
       // - Only wardens can update status to 'In Progress' or 'Resolved' and attach resolution notes.
       allow update: if isWarden() || 
         (isAuthenticated() && 

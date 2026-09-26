@@ -28,8 +28,16 @@ function maintenanceAiDevPlugin(): Plugin {
           try {
             const parsed = body ? JSON.parse(body) : {};
             const text = (parsed.description || '').trim();
-            const room = parsed.room || '204';
-            const block = parsed.block || 'Block A';
+            if (!text || text.length < 3) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ error: 'Maintenance description is required (min 3 characters).' }));
+            }
+            if (text.length > 500) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ error: 'Maintenance description exceeds maximum allowed length of 500 characters.' }));
+            }
+            const room = (parsed.room || '204').slice(0, 20);
+            const block = (parsed.block || 'Block A').slice(0, 30);
 
             const apiKey = process.env.GEMINI_API_KEY;
 
@@ -257,7 +265,16 @@ function wardenRegisterDevPlugin(): Plugin {
             const { name, email, password, phone, hostel, inviteCode } = parsed;
 
             const cleanCode = (inviteCode || '').trim();
-            const expectedCode = process.env.WARDEN_INVITE_CODE || 'CAMPUS-WARDEN-SECURE-2026';
+            const expectedCode = process.env.WARDEN_INVITE_CODE;
+
+            if (!expectedCode) {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              return res.end(
+                JSON.stringify({
+                  error: 'Warden registration service unavailable. WARDEN_INVITE_CODE environment variable is not defined.'
+                })
+              );
+            }
 
             if (!cleanCode || cleanCode !== expectedCode) {
               res.writeHead(403, { 'Content-Type': 'application/json' });
@@ -273,17 +290,20 @@ function wardenRegisterDevPlugin(): Plugin {
             const cleanPhone = (phone || '').trim();
             const cleanHostel = (hostel || 'Aravali Residence Hall').trim();
 
-            if (!cleanName || cleanName.length < 2) {
+            if (!cleanName || cleanName.length < 2 || cleanName.length > 80) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({ error: 'Full legal name is required.' }));
+              return res.end(JSON.stringify({ error: 'Full legal name must be between 2 and 80 characters.' }));
             }
-            if (!cleanEmail || !cleanEmail.includes('@')) {
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!cleanEmail || !emailRegex.test(cleanEmail) || cleanEmail.length > 100) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               return res.end(JSON.stringify({ error: 'Valid institutional email is required.' }));
             }
-            if (!password || password.length < 6) {
+
+            if (!password || password.length < 8 || password.length > 128) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({ error: 'Password must be at least 6 characters.' }));
+              return res.end(JSON.stringify({ error: 'Password must be between 8 and 128 characters.' }));
             }
 
             const uid = 'warden-' + Date.now();

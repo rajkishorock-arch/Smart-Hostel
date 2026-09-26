@@ -72,21 +72,35 @@ export default async function handler(req, res) {
   const cleanHostel = (hostel || 'Aravali Residence Hall').trim();
   const cleanCode = (inviteCode || '').trim();
 
-  // Basic validation
-  if (!cleanName || cleanName.length < 2) {
-    return res.status(400).json({ error: 'Full legal name is required.' });
+  // Strict request validation
+  if (!cleanName || cleanName.length < 2 || cleanName.length > 80) {
+    return res.status(400).json({ error: 'Full legal name must be between 2 and 80 characters.' });
   }
-  if (!cleanEmail || !cleanEmail.includes('@')) {
-    return res.status(400).json({ error: 'Valid institutional email address is required.' });
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!cleanEmail || !emailRegex.test(cleanEmail) || cleanEmail.length > 100) {
+    return res.status(400).json({ error: 'A valid institutional email address is required.' });
   }
-  if (!cleanCode) {
+
+  if (!password || password.length < 8 || password.length > 128) {
+    return res.status(400).json({ error: 'Password must be between 8 and 128 characters.' });
+  }
+
+  if (!cleanCode || cleanCode.length > 128) {
     return res.status(400).json({ error: 'Institutional Warden Invitation Code is required.' });
   }
 
   // Institutional Secret Validation (WARDEN_INVITE_CODE)
-  // Server-side ONLY. Never prefixed with VITE_.
-  const expectedInviteCode = process.env.WARDEN_INVITE_CODE || 'CAMPUS-WARDEN-SECURE-2026';
+  // Server-side ONLY. Must be set in deployment environment. Never hardcoded.
+  const expectedInviteCode = process.env.WARDEN_INVITE_CODE;
 
+  if (!expectedInviteCode) {
+    return res.status(500).json({
+      error: 'Warden registration service is temporarily unavailable. Institutional authorization secret is not configured on the server.'
+    });
+  }
+
+  // Verify invitation code
   if (cleanCode !== expectedInviteCode) {
     return res.status(403).json({
       error: 'Invalid or unauthorized institutional warden invitation code. Administrator onboarding access denied.'
@@ -105,10 +119,6 @@ export default async function handler(req, res) {
 
       if (!wardenUid) {
         // Create user in Firebase Auth server-side
-        if (!password || password.length < 6) {
-          return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-        }
-
         try {
           const userRecord = await authAdmin.createUser({
             email: cleanEmail,
@@ -169,8 +179,8 @@ export default async function handler(req, res) {
     let idToken = null;
 
     if (!wardenUid) {
-      if (!password || password.length < 6) {
-        return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters.' });
       }
 
       // Create user via Firebase Auth REST API

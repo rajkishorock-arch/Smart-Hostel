@@ -18,7 +18,11 @@ export default async function handler(req, res) {
   const text = (description || '').trim();
 
   if (!text || text.length < 3) {
-    return res.status(400).json({ error: 'Maintenance description is required' });
+    return res.status(400).json({ error: 'Maintenance description is required (min 3 characters).' });
+  }
+
+  if (text.length > 500) {
+    return res.status(400).json({ error: 'Maintenance description exceeds maximum allowed length of 500 characters.' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
