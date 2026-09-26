@@ -251,7 +251,8 @@ function wardenRegisterDevPlugin(): Plugin {
 
         if (req.method !== 'POST') {
           res.statusCode = 405;
-          return res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ success: false, message: 'Method Not Allowed. Warden registration requires POST.' }));
         }
 
         let body = '';
@@ -271,7 +272,8 @@ function wardenRegisterDevPlugin(): Plugin {
               res.writeHead(500, { 'Content-Type': 'application/json' });
               return res.end(
                 JSON.stringify({
-                  error: 'Warden registration service unavailable. WARDEN_INVITE_CODE environment variable is not defined.'
+                  success: false,
+                  message: 'Warden registration service is not configured.'
                 })
               );
             }
@@ -280,7 +282,8 @@ function wardenRegisterDevPlugin(): Plugin {
               res.writeHead(403, { 'Content-Type': 'application/json' });
               return res.end(
                 JSON.stringify({
-                  error: 'Invalid or unauthorized institutional warden invitation code. Administrator onboarding access denied.'
+                  success: false,
+                  message: 'Invalid institutional invitation code.'
                 })
               );
             }
@@ -292,18 +295,18 @@ function wardenRegisterDevPlugin(): Plugin {
 
             if (!cleanName || cleanName.length < 2 || cleanName.length > 80) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({ error: 'Full legal name must be between 2 and 80 characters.' }));
+              return res.end(JSON.stringify({ success: false, message: 'Full legal name must be between 2 and 80 characters.' }));
             }
 
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!cleanEmail || !emailRegex.test(cleanEmail) || cleanEmail.length > 100) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({ error: 'Valid institutional email is required.' }));
+              return res.end(JSON.stringify({ success: false, message: 'Valid institutional email is required.' }));
             }
 
             if (!password || password.length < 8 || password.length > 128) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({ error: 'Password must be between 8 and 128 characters.' }));
+              return res.end(JSON.stringify({ success: false, message: 'Password must be between 8 and 128 characters.' }));
             }
 
             const uid = 'warden-' + Date.now();
@@ -329,12 +332,13 @@ function wardenRegisterDevPlugin(): Plugin {
                 email: cleanEmail,
                 role: 'warden',
                 profile: profileData,
-                message: 'Warden administrator account successfully created and authorized.'
+                message: 'Warden registration completed.'
               })
             );
           } catch (err: any) {
             res.statusCode = 500;
-            return res.end(JSON.stringify({ error: err?.message || 'Server error' }));
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify({ success: false, message: 'Warden registration service is temporarily unavailable.' }));
           }
         });
       });

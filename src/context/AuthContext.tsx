@@ -219,9 +219,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Warden registration failed.');
+      const contentType = response.headers.get('content-type') || '';
+      let result: any = null;
+      if (contentType.includes('application/json')) {
+        try {
+          result = await response.json();
+        } catch {
+          result = null;
+        }
+      }
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || result?.error || 'Warden registration service is temporarily unavailable.');
       }
 
       // Sign in client Firebase Auth
@@ -229,7 +238,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await signInWithEmailAndPassword(auth, data.email.trim().toLowerCase(), data.password).catch(() => {});
       }
 
-      const profile = result.profile as UserProfile;
+      const profile: UserProfile = result.profile || {
+        uid: result.uid || 'warden-' + Date.now(),
+        name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
+        role: 'warden',
+        phone: data.phone || '+91 98000 00000',
+        hostel: data.hostel || 'Aravali Residence Hall',
+        block: 'Administration',
+        roomNumber: 'Office-01',
+        bedNumber: 'N/A',
+        createdAt: new Date().toISOString()
+      };
       setStoredCurrentUser(profile);
       setUser(profile);
       saveStoredUser(profile);
@@ -237,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return profile;
     } catch (err: any) {
       setLoading(false);
-      throw new Error(err.message || 'Warden registration failed.');
+      throw new Error(err?.message || 'Warden registration failed.');
     }
   };
 

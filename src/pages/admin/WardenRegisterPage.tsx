@@ -44,8 +44,8 @@ export const WardenRegisterPage: React.FC = () => {
       setError('Please enter a valid institutional email address.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
       return;
     }
     if (!cleanCode) {
@@ -72,10 +72,24 @@ export const WardenRegisterPage: React.FC = () => {
         })
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      let data: any = null;
+
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Warden registration rejected by authorization server.');
+        const errorMsg = data?.message || data?.error || 'Warden registration service is temporarily unavailable.';
+        throw new Error(errorMsg);
+      }
+
+      if (!data || !data.success) {
+        throw new Error(data?.message || 'Warden registration service is temporarily unavailable.');
       }
 
       setSuccess('Warden credentials verified and authorized! Redirecting to official login...');
@@ -85,7 +99,7 @@ export const WardenRegisterPage: React.FC = () => {
         });
       }, 1800);
     } catch (err: any) {
-      setError(err.message || 'Warden onboarding failed. Please verify your invitation secret.');
+      setError(err?.message || 'Warden registration service is temporarily unavailable.');
     } finally {
       setSubmitting(false);
     }
