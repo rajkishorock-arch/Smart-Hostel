@@ -2,14 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppLayout } from '../../components/layout/AppLayout';
-import { Ticket, RoomRecord, UserProfile, ActivityLog, SmartInsight } from '../../types';
+import { Ticket, RoomRecord, UserProfile, ActivityLog, SmartInsight, Announcement } from '../../types';
 import {
   subscribeTickets,
   subscribeRooms,
   getStoredUsers,
   getStoredMealSchedule,
-  getStoredAnnouncements,
-  getAllResidents
+  subscribeAnnouncements,
+  getAllResidents,
+  detectRepeatedIssues,
+  getOperationalPriorities
 } from '../../services/storageService';
 import { subscribeActivityLogs } from '../../services/activityService';
 import {
@@ -37,7 +39,11 @@ import {
   BarChart3,
   PieChart,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  Flame,
+  ListTodo,
+  RefreshCw,
+  Eye
 } from 'lucide-react';
 
 export const WardenOverviewPage: React.FC = () => {
@@ -46,6 +52,7 @@ export const WardenOverviewPage: React.FC = () => {
   const [rooms, setRooms] = useState<RoomRecord[]>([]);
   const [residents, setResidents] = useState<UserProfile[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   useEffect(() => {
     const unsubTickets = subscribeTickets(
@@ -54,12 +61,14 @@ export const WardenOverviewPage: React.FC = () => {
     );
     const unsubRooms = subscribeRooms(all => setRooms(all));
     const unsubLogs = subscribeActivityLogs(logs => setActivityLogs(logs), 8);
+    const unsubAnn = subscribeAnnouncements(all => setAnnouncements(all), false);
     setResidents(getAllResidents());
 
     return () => {
       unsubTickets();
       unsubRooms();
       unsubLogs();
+      unsubAnn();
     };
   }, [user]);
 
@@ -137,6 +146,12 @@ export const WardenOverviewPage: React.FC = () => {
     }));
   }, [rooms]);
 
+  const repeatedIssues = useMemo(() => detectRepeatedIssues(tickets), [tickets]);
+  const operationalPriorities = useMemo(
+    () => getOperationalPriorities(tickets, residents, rooms),
+    [tickets, residents, rooms]
+  );
+
   // Real Smart Insights generated strictly from live Firestore data
   const smartInsights = useMemo<SmartInsight[]>(() => {
     const list: SmartInsight[] = [];
@@ -159,30 +174,22 @@ export const WardenOverviewPage: React.FC = () => {
       list.push({
         id: 'elec-ins',
         type: 'warning',
-        title: 'Unusually High Proportion of Electrical Tickets',
-        description: `${Math.round((categoryCounts.Electrical / totalActiveTickets) * 100)}% of pending tickets are Electrical. Consider scheduling a block-level power inspection.`,
+        title: 'High Electrical Complaint Volume',
+        description: `${categoryCounts.Electrical} out of ${totalActiveTickets} (${Math.round((categoryCounts.Electrical / totalActiveTickets) * 100)}%) active tickets are Electrical. Consider scheduling a block-level power inspection.`,
         metric: `${categoryCounts.Electrical} Electrical`,
         timestamp: new Date().toISOString()
       });
     }
 
-    // 3. Repeated Room Maintenance Issues
-    const roomTicketCounts: Record<string, number> = {};
-    for (const t of tickets) {
-      const rm = t.roomNumber || t.room;
-      if (rm) {
-        roomTicketCounts[rm] = (roomTicketCounts[rm] || 0) + 1;
-      }
-    }
-    const repeatRooms = Object.entries(roomTicketCounts).filter(([_, count]) => count >= 2);
-    if (repeatRooms.length > 0) {
-      const [topRoom, count] = repeatRooms.sort((a, b) => b[1] - a[1])[0];
+    // 3. Repeated Room Maintenance Issues (from real records)
+    if (repeatedIssues.length > 0) {
+      const topRepeat = repeatedIssues[0];
       list.push({
         id: 'repeat-rm-ins',
         type: 'warning',
-        title: `Repeated Maintenance in Room ${topRoom}`,
-        description: `Room ${topRoom} has logged ${count} maintenance requests. Facility inspection recommended.`,
-        metric: `${count} Tickets`,
+        title: `Repeated Maintenance Issue: Room ${topRepeat.room}`,
+        description: `Room ${topRepeat.room} has logged ${topRepeat.count} ${topRepeat.category} tickets (${topRepeat.recentDates.slice(0, 3).join(', ')}). Comprehensive facility inspection recommended.`,
+        metric: `${topRepeat.count} ${topRepeat.category}`,
         timestamp: new Date().toISOString()
       });
     }
@@ -199,22 +206,43 @@ export const WardenOverviewPage: React.FC = () => {
       });
     }
 
-    // 5. Occupancy Level Insight
+    // 5. Unusually High Pending Tickets
+    if (openTickets + inProgressTickets >= 6) {
+      list.push({
+        id: 'high-pending-ins',
+        type: 'warning',
+        title: 'Elevated Maintenance Ticket Queue',
+        description: `${openTickets + inProgressTickets} tickets are currently pending resolution across campus facilities.`,
+        metric: `${openTickets + inProgressTickets} Pending`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // 6. Occupancy Level Insight
     if (totalBeds > 0) {
       if (occupancyRate >= 90) {
         list.push({
           id: 'high-occ',
           type: 'warning',
-          title: `High Occupancy: ${occupancyRate}% Beds Filled`,
+          title: `Room Capacity Pressure: ${occupancyRate}% Filled`,
           description: `Only ${availableBeds} bed(s) remain vacant across all hostel blocks.`,
           metric: `${availableBeds} Vacant`,
+          timestamp: new Date().toISOString()
+        });
+      } else if (criticalTickets === 0 && openTickets === 0 && unallocatedResidents === 0) {
+        list.push({
+          id: 'healthy-state',
+          type: 'positive',
+          title: 'All Facilities Operating in Healthy State',
+          description: `Zero critical safety issues, zero unallocated residents, and healthy bed availability (${availableBeds} vacant beds).`,
+          metric: 'Healthy',
           timestamp: new Date().toISOString()
         });
       } else {
         list.push({
           id: 'normal-occ',
           type: 'positive',
-          title: `Optimal Campus Capacity (${occupancyRate}% Occupied)`,
+          title: `Balanced Campus Capacity (${occupancyRate}% Occupied)`,
           description: `${occupiedBeds} beds occupied across ${totalRooms} rooms with ${availableBeds} beds available.`,
           metric: `${availableBeds} Available`,
           timestamp: new Date().toISOString()
@@ -223,7 +251,7 @@ export const WardenOverviewPage: React.FC = () => {
     }
 
     return list;
-  }, [criticalTickets, tickets, categoryCounts, unallocatedResidents, totalBeds, occupancyRate, availableBeds, occupiedBeds, totalRooms]);
+  }, [criticalTickets, tickets, categoryCounts, repeatedIssues, unallocatedResidents, openTickets, inProgressTickets, totalBeds, occupancyRate, availableBeds, occupiedBeds, totalRooms]);
 
   const recentTickets = tickets.slice(0, 5);
 
@@ -406,6 +434,284 @@ export const WardenOverviewPage: React.FC = () => {
           <div style={subTextStyle}>{nextMeal ? `${nextMeal.startTime} - ${nextMeal.endTime}` : 'Serving active'}</div>
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* SMART OPERATIONAL PRIORITY ("NEEDS ATTENTION") & TODAY'S OPERATIONS */}
+      {/* ============================================================ */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+        {/* Needs Attention Card (Feature 5) */}
+        <div style={{ ...cardStyle, padding: '22px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ ...iconBoxStyle, width: '32px', height: '32px', background: '#fef2f2', color: '#dc2626' }}>
+                <Flame size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0 }}>
+                  Needs Attention
+                </h3>
+                <span style={{ fontSize: '0.74rem', color: 'var(--neutral-muted)' }}>
+                  Prioritized Operational Action Items ({operationalPriorities.length})
+                </span>
+              </div>
+            </div>
+            {operationalPriorities.length > 0 && (
+              <span style={{ fontSize: '0.72rem', background: '#fee2e2', color: '#991b1b', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>
+                {operationalPriorities.filter(p => p.priority === 'Critical').length} Critical
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '320px', overflowY: 'auto' }}>
+            {operationalPriorities.length === 0 ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--neutral-muted)' }}>
+                <CheckCircle2 size={32} style={{ color: '#16a34a', margin: '0 auto 8px', opacity: 0.8 }} />
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#15803d' }}>All Queues Operating Smoothly</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>No urgent maintenance, unallocated students, or repeated issues pending.</div>
+              </div>
+            ) : (
+              operationalPriorities.map((item) => {
+                const isCrit = item.priority === 'Critical';
+                const isHigh = item.priority === 'High';
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: isCrit ? '#fef2f2' : isHigh ? '#fffbeb' : '#f8fafc',
+                      border: `1px solid ${isCrit ? '#fecaca' : isHigh ? '#fde68a' : '#e2e8f0'}`,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase',
+                            background: isCrit ? '#dc2626' : isHigh ? '#d97706' : '#64748b',
+                            color: '#ffffff'
+                          }}
+                        >
+                          {item.priority}
+                        </span>
+                        <span style={{ fontSize: '0.84rem', fontWeight: 700, color: isCrit ? '#991b1b' : 'var(--neutral-dark)' }}>
+                          {item.title}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: isCrit ? '#7f1d1d' : 'var(--neutral-muted)', lineHeight: 1.35 }}>
+                        {item.reason}
+                      </div>
+                    </div>
+                    <Link
+                      to={item.link}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        background: '#ffffff',
+                        border: '1px solid var(--neutral-border)',
+                        color: 'var(--brand-blue)',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        textDecoration: 'none',
+                        flexShrink: 0
+                      }}
+                    >
+                      Action <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Today's Operations Card (Feature 8) */}
+        <div style={{ ...cardStyle, padding: '22px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ ...iconBoxStyle, width: '32px', height: '32px', background: '#eff6ff', color: '#2563eb' }}>
+                <ListTodo size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0 }}>
+                  Today's Operations
+                </h3>
+                <span style={{ fontSize: '0.74rem', color: 'var(--neutral-muted)' }}>
+                  Active Campus Workflow Status
+                </span>
+              </div>
+            </div>
+            <span style={{ fontSize: '0.72rem', background: '#f1f5f9', color: '#475569', fontWeight: 600, padding: '2px 8px', borderRadius: '6px' }}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--neutral-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                Critical Issues
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: criticalTickets > 0 ? '#dc2626' : '#16a34a', marginTop: '2px' }}>
+                {criticalTickets}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                {criticalTickets > 0 ? 'Requires immediate action' : 'Zero emergency tickets'}
+              </div>
+            </div>
+
+            <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--neutral-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                Pending Tickets
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#b45309', marginTop: '2px' }}>
+                {openTickets + inProgressTickets}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                {openTickets} open, {inProgressTickets} in progress
+              </div>
+            </div>
+
+            <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--neutral-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                Unallocated Residents
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: unallocatedResidents > 0 ? '#4338ca' : '#16a34a', marginTop: '2px' }}>
+                {unallocatedResidents}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                {unallocatedResidents > 0 ? 'Awaiting room & bed' : 'All students allocated'}
+              </div>
+            </div>
+
+            <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--neutral-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                Today's Mess
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0891b2', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {nextMeal ? nextMeal.meal : 'Active'}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                {nextMeal ? `${nextMeal.startTime} - ${nextMeal.endTime}` : 'Service on schedule'}
+              </div>
+            </div>
+
+            <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--neutral-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                Active Notices
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#475569', marginTop: '2px' }}>
+                {announcements.filter(a => a.published).length}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                Published bulletin posts
+              </div>
+            </div>
+
+            <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--neutral-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                Recent Activities
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#10b981', marginTop: '2px' }}>
+                {activityLogs.length}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                Logged system audit events
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* REPEATED MAINTENANCE ISSUES (Feature 4)                      */}
+      {/* ============================================================ */}
+      {repeatedIssues.length > 0 && (
+        <div style={{ ...cardStyle, padding: '22px', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ ...iconBoxStyle, width: '32px', height: '32px', background: '#fffbeb', color: '#b45309' }}>
+                <RefreshCw size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0 }}>
+                  Repeated Maintenance Issues Detected
+                </h3>
+                <span style={{ fontSize: '0.74rem', color: 'var(--neutral-muted)' }}>
+                  Patterns identified from multiple logged tickets in the same room & category
+                </span>
+              </div>
+            </div>
+            <span style={{ fontSize: '0.72rem', background: '#fef3c7', color: '#92400e', fontWeight: 700, padding: '3px 8px', borderRadius: '6px' }}>
+              {repeatedIssues.length} Pattern(s) Identified
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+            {repeatedIssues.map((rep) => (
+              <div
+                key={`${rep.room}-${rep.category}`}
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: '10px',
+                  background: '#ffffff',
+                  border: '1px solid #fed7aa',
+                  boxShadow: 'var(--shadow-xs)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#c2410c', textTransform: 'uppercase' }}>
+                      Repeated Issue Detected
+                    </span>
+                    <h4 style={{ margin: '2px 0 0 0', fontSize: '1rem', fontWeight: 800, color: 'var(--neutral-dark)' }}>
+                      Room {rep.room} ({rep.block || 'Hostel Block'})
+                    </h4>
+                  </div>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      background: '#ffedd5',
+                      color: '#9a3412',
+                      fontSize: '0.75rem',
+                      fontWeight: 800
+                    }}
+                  >
+                    {rep.count} × {rep.category}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '0.76rem', color: 'var(--neutral-muted)', marginBottom: '8px' }}>
+                  <strong>Ticket Dates:</strong> {rep.recentDates.join(', ')}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '0.74rem', color: rep.currentUnresolvedTicket ? '#dc2626' : '#16a34a', fontWeight: 600 }}>
+                    {rep.currentUnresolvedTicket ? `Active: #${rep.currentUnresolvedTicket.id} (${rep.currentUnresolvedTicket.status})` : 'All related tickets resolved'}
+                  </span>
+                  <Link
+                    to="/admin/maintenance/tickets"
+                    style={{ fontSize: '0.74rem', color: 'var(--brand-blue)', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '2px' }}
+                  >
+                    View History <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* REAL CHARTS & DATA VISUALIZATIONS SECTION                     */}

@@ -109,15 +109,25 @@ export function classifyTicketLocally(text: string, room?: string): SmartMainten
 
   // 1. Safety Critical Check
   let safetyAlert: string | undefined = undefined;
+  let safeGuidance: string = 'Do not attempt hazardous repairs yourself. An authorized technician will inspect the premises.';
   const isSafetyCritical = SAFETY_CRITICAL_TRIGGERS.some(trigger => normalized.includes(trigger));
 
   if (isSafetyCritical) {
-    if (normalized.includes('spark') || normalized.includes('shock') || normalized.includes('wire') || normalized.includes('burning') || normalized.includes('smoke') || normalized.includes('fire')) {
-      safetyAlert = '⚠️ ELECTRICAL SAFETY HAZARD: Switch off room power breaker immediately. Do NOT touch appliances or wires. Alert the Hostel Office and Warden Desk immediately.';
+    if (normalized.includes('gas smell') || normalized.includes('gas leak')) {
+      safetyAlert = '⚠️ GAS HAZARD DETECTED: Move away from the source immediately and follow hostel emergency evacuation procedure.';
+      safeGuidance = 'Move away from the source immediately, avoid using switches or open flames, and follow hostel emergency procedure.';
+    } else if (normalized.includes('spark') || normalized.includes('exposed wire')) {
+      safetyAlert = '⚠️ ELECTRICAL SPARK HAZARD: Avoid touching exposed electrical components and contact hostel maintenance.';
+      safeGuidance = 'Avoid touching exposed electrical components, keep clear of the fixture, switch off room breaker if accessible, and contact hostel maintenance.';
+    } else if (normalized.includes('smoke') || normalized.includes('burning smell') || normalized.includes('electrical burning') || normalized.includes('fire')) {
+      safetyAlert = '⚠️ SMOKE / BURNING DETECTED: Move away from the hazard and contact hostel emergency/maintenance support.';
+      safeGuidance = 'Move away from the hazard immediately, alert nearby residents, and contact hostel emergency/maintenance support.';
     } else if (normalized.includes('flood') || normalized.includes('burst pipe')) {
-      safetyAlert = '⚠️ PLUMBING EMERGENCY: Shut off the nearest water isolation valve. Keep electrical gadgets off the floor. Report immediately to Hostel Desk.';
+      safetyAlert = '⚠️ FLOODING ALERT: Avoid electrical contact and report immediately.';
+      safeGuidance = 'Avoid electrical contact with standing water, keep electrical equipment off the floor, shut off nearest isolation valve if safe, and report immediately.';
     } else {
       safetyAlert = '⚠️ CRITICAL SAFETY NOTICE: Maintain safe distance. Do NOT attempt repairs yourself. Warden Desk notified for emergency dispatch.';
+      safeGuidance = 'Maintain safe distance and follow instructions from hostel administration staff.';
     }
   }
 
@@ -201,6 +211,18 @@ export function classifyTicketLocally(text: string, room?: string): SmartMainten
   let confidence = Math.min(96, Math.max(55, Math.round(55 + maxScore * 7)));
   if (matchedKeywords.length === 0) confidence = 50;
 
+  // Department mapping
+  const departmentMap: Record<TicketCategory, string> = {
+    Electrical: 'Electrical Maintenance Division',
+    Plumbing: 'Plumbing & Water Services Team',
+    Carpentry: 'Carpentry & Joinery Workshop',
+    Cleaning: 'Housekeeping & Sanitation Unit',
+    Infrastructure: 'Civil Maintenance & Structural Works',
+    Other: 'Campus Facility Administration'
+  };
+
+  const recommendedDepartment = departmentMap[bestCategory] || 'Campus Facility Administration';
+
   // Operational Action Suggestions
   let suggestedAction = 'Physical assessment by hostel maintenance team.';
   if (isSafetyCritical) {
@@ -232,6 +254,9 @@ export function classifyTicketLocally(text: string, room?: string): SmartMainten
     reasoning,
     confidence,
     safetyAlert,
+    safetyFlag: isSafetyCritical || priority === 'Critical',
+    safeGuidance,
+    recommendedDepartment,
     source: 'local_fallback'
   };
 }
@@ -296,6 +321,9 @@ export async function analyzeMaintenanceWithAI(
           reasoning: data.reasoning || `Detected markers aligning with ${data.category.toLowerCase()} maintenance.`,
           confidence: Math.min(98, Math.max(50, Number(data.confidence) || 90)),
           safetyAlert: data.safetyAlert,
+          safetyFlag: data.safetyFlag ?? (priority === 'Critical' || !!data.safetyAlert),
+          safeGuidance: data.safeGuidance || (priority === 'Critical' ? 'Avoid touching hazard and contact hostel administration immediately.' : 'Do not attempt repairs yourself.'),
+          recommendedDepartment: data.recommendedDepartment,
           source: data.source === 'gemini' ? 'gemini' : 'local_fallback'
         };
       }

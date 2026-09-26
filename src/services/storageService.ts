@@ -7,7 +7,10 @@ import {
   UserRole,
   Announcement,
   MealScheduleItem,
-  TicketStatus
+  TicketStatus,
+  RepeatedIssueSummary,
+  OperationalPriorityItem,
+  TicketCategory
 } from '../types';
 import {
   DEMO_USERS,
@@ -276,7 +279,8 @@ export async function saveTicket(ticket: Ticket, actorName: string = 'Resident')
       targetRole: 'warden',
       title: `${isCritical ? '🚨 CRITICAL' : '📝 New'} Maintenance Ticket #${preparedTicket.id}`,
       message: `${preparedTicket.category} issue reported in Room ${preparedTicket.room} (${preparedTicket.block}): ${preparedTicket.description.slice(0, 70)}...`,
-      type: 'ticket',
+      type: isCritical ? 'critical' : 'ticket',
+      priority: isCritical ? 'Critical' : (preparedTicket.priority === 'High' ? 'High' : 'Normal'),
       link: '/admin/maintenance/tickets'
     });
 
@@ -347,13 +351,15 @@ export async function updateTicketStatus(
 
   // Notify resident of ticket progress
   if (ticket.residentId) {
+    const isCritical = ticket.priority === 'Critical' || ticket.priority === 'Urgent';
     createNotification({
       userId: ticket.residentId,
       title: `Ticket #${ticket.id} Updated: ${newStatus}`,
       message: wardenNotes
         ? `Warden Note: "${wardenNotes}"`
         : `Your ${ticket.category} ticket for Room ${ticket.room} is now ${newStatus}.`,
-      type: 'ticket',
+      type: newStatus === 'Resolved' ? 'success' : (isCritical ? 'critical' : 'ticket'),
+      priority: isCritical ? 'Critical' : (ticket.priority === 'High' ? 'High' : 'Normal'),
       link: '/resident/maintenance/tickets'
     });
   }
@@ -524,9 +530,29 @@ export async function allocateBed(
   resident: { uid: string; name: string; studentId?: string },
   wardenName: string = 'Warden'
 ): Promise<boolean> {
+  if (!resident || !resident.uid || !resident.name) {
+    console.warn('Cannot allocate: Invalid resident data provided');
+    return false;
+  }
+
   const rooms = getStoredRooms();
   const room = rooms.find(r => r.id === roomId);
-  if (!room) return false;
+  if (!room) {
+    console.warn('Cannot allocate: Target room not found');
+    return false;
+  }
+
+  const targetBed = room.beds.find(b => b.bedNumber === bedNumber);
+  if (!targetBed) {
+    console.warn('Cannot allocate: Target bed not found in room');
+    return false;
+  }
+
+  // Prevent overwriting a bed already occupied by another resident
+  if (targetBed.residentId && targetBed.residentId !== resident.uid) {
+    console.warn('Cannot allocate: Bed is already occupied by another student');
+    return false;
+  }
 
   // Release any existing bed for this resident across all rooms to prevent duplicate allocation
   rooms.forEach(rm => {
@@ -543,6 +569,12 @@ export async function allocateBed(
 
   const bed = room.beds.find(b => b.bedNumber === bedNumber);
   if (!bed) return false;
+
+  // Prevent room over-capacity
+  if (room.occupied >= room.capacity && !bed.residentId) {
+    console.warn('Cannot allocate: Room has reached maximum capacity');
+    return false;
+  }
 
   // Assign bed
   bed.residentId = resident.uid;
@@ -976,3 +1008,126 @@ export function subscribeMealSchedule(callback: (list: MealScheduleItem[]) => vo
   notify();
   return () => window.removeEventListener(EVENT_SCHEDULE_CHANGED, notify);
 }
+
+// ----------------- SMART REPEATED ISSUE DETECTION -----------------
+
+export function detectRepeatedIssues(tickets: Ticket[]): RepeatedIssueSummary[] {
+  const map: Record<string, {
+    room: string;
+    block?: string;
+    category: TicketCategory;
+    tickets: Ticket[];
+  }> = {};
+
+  for (const t of tickets) {
+    const rm = (t.roomNumber || t.room || '').trim();
+    if (!rm) continue;
+    const cat = t.category;
+    const key = `${rm}___${cat}`;
+    if (!map[key]) {
+      map[key] = {
+        room: rm,
+        block: t.block,
+        category: cat,
+        tickets: []
+      };
+    }
+    map[key].tickets.push(t);
+  }
+
+  const results: RepeatedIssueSummary[] = [];
+
+  for (const entry of Object.values(map)) {
+    if (entry.tickets.length >= 2) {
+      const sorted = [...entry.tickets].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const unresolved = sorted.find(t => t.status !== 'Resolved');
+      results.push({
+        room: entry.room,
+        block: entry.block,
+        category: entry.category,
+        count: entry.tickets.length,
+        recentDates: sorted.map(t => t.createdAt.split('T')[0]).slice(0, 4),
+        currentUnresolvedTicket: unresolved
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.count - a.count);
+}
+
+// ----------------- SMART OPERATIONAL PRIORITY ENGINE -----------------
+
+export function getOperationalPriorities(
+  tickets: Ticket[],
+  residents: UserProfile[],
+  rooms: RoomRecord[]
+): OperationalPriorityItem[] {
+  const items: OperationalPriorityItem[] = [];
+
+  // 1. Critical unresolved maintenance
+  const criticalTickets = tickets.filter(
+    t => (t.priority === 'Critical' || t.priority === 'Urgent') && t.status !== 'Resolved'
+  );
+  criticalTickets.forEach(t => {
+    items.push({
+      id: `crit-op-${t.id}`,
+      type: 'critical_ticket',
+      priority: 'Critical',
+      title: `Critical ${t.category} ticket — Room ${t.roomNumber || t.room}`,
+      reason: t.safetyAlert || `Immediate safety & operational hazard flagged in ${t.category}.`,
+      link: '/admin/maintenance/resolution',
+      timestamp: t.createdAt
+    });
+  });
+
+  // 2. High-priority unresolved maintenance
+  const highTickets = tickets.filter(
+    t => t.priority === 'High' && t.status !== 'Resolved'
+  );
+  highTickets.forEach(t => {
+    items.push({
+      id: `high-op-${t.id}`,
+      type: 'high_ticket',
+      priority: 'High',
+      title: `High-priority ${t.category} ticket — Room ${t.roomNumber || t.room}`,
+      reason: `Urgent resident complaint requires technician assignment.`,
+      link: '/admin/maintenance/resolution',
+      timestamp: t.createdAt
+    });
+  });
+
+  // 3. Residents without allocation
+  const unallocated = residents.filter(
+    r => r.role === 'resident' && (!r.roomNumber || r.roomNumber.trim() === '')
+  );
+  unallocated.forEach(r => {
+    items.push({
+      id: `unalloc-op-${r.uid}`,
+      type: 'unallocated_resident',
+      priority: 'Normal',
+      title: `Resident unallocated — ${r.name}`,
+      reason: `Student enrolled but awaiting room & bed assignment.`,
+      link: '/admin/hostel/allocation',
+      timestamp: r.createdAt || new Date().toISOString()
+    });
+  });
+
+  // 4. Rooms with repeated issues
+  const repeated = detectRepeatedIssues(tickets);
+  repeated.forEach(rep => {
+    items.push({
+      id: `rep-op-${rep.room}-${rep.category}`,
+      type: 'repeated_issue',
+      priority: rep.currentUnresolvedTicket ? 'High' : 'Normal',
+      title: `Repeated ${rep.category} issue — Room ${rep.room}`,
+      reason: `${rep.count} related tickets logged. Facility physical inspection recommended.`,
+      link: '/admin/maintenance/tickets',
+      timestamp: rep.recentDates[0] || new Date().toISOString()
+    });
+  });
+
+  return items;
+}
+

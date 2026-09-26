@@ -194,89 +194,118 @@ export const NotificationBell: React.FC = () => {
                 <div style={{ fontSize: '0.72rem', marginTop: '2px' }}>Real-time updates will appear here.</div>
               </div>
             ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => handleNotificationClick(n)}
-                  style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid #f1f5f9',
-                    background: n.read ? '#ffffff' : '#f8faff',
-                    cursor: n.link ? 'pointer' : 'default',
-                    display: 'flex',
-                    gap: '12px',
-                    alignItems: 'flex-start',
-                    transition: 'background 0.15s ease'
-                  }}
-                >
+              notifications.map((n) => {
+                const isCritical = n.priority === 'Critical' || n.type === 'critical' || n.type === 'emergency';
+                const isHigh = n.priority === 'High';
+
+                return (
                   <div
+                    key={n.id}
+                    onClick={() => handleNotificationClick(n)}
                     style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '6px',
-                      background: n.read ? '#f1f5f9' : '#e0e7ff',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid #f1f5f9',
+                      background: isCritical
+                        ? (n.read ? '#fff5f5' : '#fef2f2')
+                        : (n.read ? '#ffffff' : '#f8faff'),
+                      borderLeft: isCritical
+                        ? '4px solid #ef4444'
+                        : isHigh
+                        ? '4px solid #f59e0b'
+                        : (n.read ? '4px solid transparent' : '4px solid #3b82f6'),
+                      cursor: n.link ? 'pointer' : 'default',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      marginTop: '2px'
+                      gap: '12px',
+                      alignItems: 'flex-start',
+                      transition: 'background 0.15s ease'
                     }}
                   >
-                    {getIcon(n.type)}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                      <span
-                        style={{
-                          fontSize: '0.8rem',
-                          fontWeight: n.read ? 600 : 700,
-                          color: 'var(--neutral-dark)'
-                        }}
-                      >
-                        {n.title}
-                      </span>
-                      {!n.read && (
-                        <span
-                          style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            background: '#3b82f6',
-                            flexShrink: 0
-                          }}
-                        />
-                      )}
-                    </div>
                     <div
                       style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--neutral-muted)',
-                        marginTop: '3px',
-                        lineHeight: 1.35
-                      }}
-                    >
-                      {n.message}
-                    </div>
-                    <div
-                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        background: isCritical ? '#fee2e2' : (n.read ? '#f1f5f9' : '#e0e7ff'),
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginTop: '6px',
-                        fontSize: '0.68rem',
-                        color: '#94a3b8'
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: '2px'
                       }}
                     >
-                      <span>{new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {n.link && (
-                        <span style={{ color: 'var(--brand-blue)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px' }}>
-                          View <ArrowRight size={10} />
-                        </span>
-                      )}
+                      {getIcon(n.type)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              fontSize: '0.8rem',
+                              fontWeight: n.read ? 600 : 700,
+                              color: isCritical ? '#b91c1c' : 'var(--neutral-dark)'
+                            }}
+                          >
+                            {n.title}
+                          </span>
+                          {n.priority && (
+                            <span
+                              style={{
+                                fontSize: '0.62rem',
+                                fontWeight: 800,
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                textTransform: 'uppercase',
+                                background: isCritical ? '#fee2e2' : isHigh ? '#fef3c7' : '#f1f5f9',
+                                color: isCritical ? '#b91c1c' : isHigh ? '#92400e' : '#64748b'
+                              }}
+                            >
+                              {n.priority}
+                            </span>
+                          )}
+                        </div>
+                        {!n.read && (
+                          <span
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              background: isCritical ? '#ef4444' : '#3b82f6',
+                              flexShrink: 0
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: isCritical ? '#7f1d1d' : 'var(--neutral-muted)',
+                          marginTop: '3px',
+                          lineHeight: 1.35
+                        }}
+                      >
+                        {n.message}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginTop: '6px',
+                          fontSize: '0.68rem',
+                          color: '#94a3b8'
+                        }}
+                      >
+                        <span>{new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {n.link && (
+                          <span style={{ color: 'var(--brand-blue)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            View <ArrowRight size={10} />
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

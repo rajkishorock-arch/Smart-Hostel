@@ -48,7 +48,29 @@ export interface SmartMaintenanceAIResult {
   reasoning: string;
   confidence: number;
   safetyAlert?: string;
+  recommendedDepartment?: string;
+  safetyFlag?: boolean;
+  safeGuidance?: string;
   source?: 'gemini' | 'local_fallback';
+}
+
+export interface RepeatedIssueSummary {
+  room: string;
+  block?: string;
+  category: TicketCategory;
+  count: number;
+  recentDates: string[];
+  currentUnresolvedTicket?: Ticket;
+}
+
+export interface OperationalPriorityItem {
+  id: string;
+  type: 'critical_ticket' | 'high_ticket' | 'unallocated_resident' | 'repeated_issue' | 'operational_pending';
+  priority: 'Critical' | 'High' | 'Normal' | 'Info';
+  title: string;
+  reason: string;
+  link: string;
+  timestamp: string;
 }
 
 export interface Ticket {
@@ -72,6 +94,9 @@ export interface Ticket {
   aiSuggestedAction?: string;
   aiReasoning?: string;
   safetyAlert?: string;
+  safetyFlag?: boolean;
+  safeGuidance?: string;
+  recommendedDepartment?: string;
   wardenNotes?: string;
   resolutionNote?: string;
   assignedTo?: string;
@@ -148,6 +173,7 @@ export interface AppNotification {
   title: string;
   message: string;
   type: 'ticket' | 'allocation' | 'notice' | 'mess' | 'system' | 'critical' | 'emergency' | 'success' | 'maintenance';
+  priority?: 'Critical' | 'High' | 'Normal' | 'Info';
   link?: string;
   read: boolean;
   createdAt: string;

@@ -6,8 +6,11 @@ import {
   getStoredTickets,
   getStoredMessMenu,
   getStoredAnnouncements,
-  getAllResidents
+  getAllResidents,
+  detectRepeatedIssues,
+  getOperationalPriorities
 } from '../../services/storageService';
+import { getStoredNotifications } from '../../services/notificationService';
 import {
   MessageSquare,
   X,
@@ -32,19 +35,27 @@ export const SmartHostelAIAssistant: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Suggested question chips based on role
+  // Suggested question chips based on role (Requirement 2)
   const suggestedQuestions = isWarden
     ? [
-        "Show today's operations",
         "How many beds are available?",
-        "Show critical maintenance issues",
-        "What's today's mess menu?"
+        "Which rooms have vacancies?",
+        "How many complaints are pending?",
+        "How many critical complaints exist?",
+        "Which maintenance category is highest?",
+        "Which rooms have repeated complaints?",
+        "Which residents are unallocated?",
+        "What is today's mess?",
+        "What needs attention right now?"
       ]
     : [
+        "Which room am I in?",
+        "Who are my roommates?",
         "What's today's mess?",
-        "Where is my room?",
-        "Track my maintenance issue",
-        "How do I report a problem?"
+        "Show my pending complaints.",
+        "What happened to my complaint?",
+        "Are there any important notices?",
+        "What should I do if my fan is sparking?"
       ];
 
   // Initialize initial greeting when opened or user loads
@@ -115,8 +126,38 @@ export const SmartHostelAIAssistant: React.FC = () => {
         const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
         const openTickets = tickets.filter(t => t.status === 'Open' || t.status === 'AI Classified').length;
         const inProgressTickets = tickets.filter(t => t.status === 'In Progress' || t.status === 'Assigned').length;
-        const criticalTickets = tickets.filter(t => t.priority === 'Critical').length;
+        const criticalTickets = tickets.filter(t => t.priority === 'Critical' || t.priority === 'Urgent').length;
         const resolvedTickets = tickets.filter(t => t.status === 'Resolved').length;
+
+        const unallocatedList = residents
+          .filter(r => r.role === 'resident' && (!r.roomNumber || r.roomNumber.trim() === ''))
+          .map(r => ({ name: r.name, uid: r.uid }));
+
+        const roomsWithVacancies = rooms
+          .filter(r => r.occupied < r.capacity)
+          .map(r => ({
+            roomNumber: r.roomNumber,
+            block: r.block,
+            availableBeds: r.capacity - r.occupied,
+            capacity: r.capacity
+          }));
+
+        // Category breakdown
+        const catCounts: Record<string, number> = {};
+        for (const t of tickets) {
+          catCounts[t.category] = (catCounts[t.category] || 0) + 1;
+        }
+        let topCat = 'None';
+        let topCatCount = 0;
+        for (const [c, cnt] of Object.entries(catCounts)) {
+          if (cnt > topCatCount) {
+            topCat = c;
+            topCatCount = cnt;
+          }
+        }
+
+        const repIssues = detectRepeatedIssues(tickets);
+        const opPriorities = getOperationalPriorities(tickets, residents, rooms);
 
         clientContext = {
           stats: {
@@ -129,8 +170,23 @@ export const SmartHostelAIAssistant: React.FC = () => {
             openTickets,
             inProgressTickets,
             criticalTickets,
-            resolvedTickets
+            resolvedTickets,
+            unallocatedCount: unallocatedList.length
           },
+          vacantRooms: roomsWithVacancies,
+          unallocatedResidents: unallocatedList,
+          highestCategory: { category: topCat, count: topCatCount },
+          repeatedIssues: repIssues.map(ri => ({
+            room: ri.room,
+            category: ri.category,
+            count: ri.count,
+            recentDates: ri.recentDates
+          })),
+          operationalPriorities: opPriorities.slice(0, 6).map(op => ({
+            title: op.title,
+            priority: op.priority,
+            reason: op.reason
+          })),
           tickets: tickets.slice(0, 10).map(t => ({
             id: t.id,
             title: t.title || t.description,
@@ -155,6 +211,11 @@ export const SmartHostelAIAssistant: React.FC = () => {
 
         const myTickets = tickets.filter(t => t.residentId === user?.uid || (user?.roomNumber && (t.roomNumber === user.roomNumber || t.room === user.roomNumber)));
 
+        const myNotifs = getStoredNotifications()
+          .filter(n => n.userId === user?.uid || n.targetRole === 'all')
+          .slice(0, 5)
+          .map(n => ({ id: n.id, title: n.title, message: n.message, priority: n.priority }));
+
         clientContext = {
           room: {
             roomNumber: user?.roomNumber || '204',
@@ -169,6 +230,7 @@ export const SmartHostelAIAssistant: React.FC = () => {
             priority: t.priority,
             status: t.status
           })),
+          notifications: myNotifs,
           todayMenu,
           notices: notices.slice(0, 5).map(n => ({
             id: n.id,

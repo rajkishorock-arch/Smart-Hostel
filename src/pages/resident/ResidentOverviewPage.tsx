@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { useAuth } from '../../context/AuthContext';
-import { Ticket, RoomRecord, Announcement, WeeklyMessMenu } from '../../types';
+import { Ticket, RoomRecord, Announcement, WeeklyMessMenu, AppNotification } from '../../types';
 import {
   subscribeTickets,
   getStoredRooms,
@@ -10,6 +10,7 @@ import {
   getStoredMealSchedule,
   subscribeMessMenu
 } from '../../services/storageService';
+import { subscribeNotifications } from '../../services/notificationService';
 import { LodgeTicketModal } from '../../components/resident/LodgeTicketModal';
 import {
   DoorOpen,
@@ -30,7 +31,11 @@ import {
   Moon,
   Layers,
   Check,
-  FileText
+  FileText,
+  Users,
+  Bell,
+  Sparkles,
+  Bot
 } from 'lucide-react';
 
 export const ResidentOverviewPage: React.FC = () => {
@@ -39,6 +44,7 @@ export const ResidentOverviewPage: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [rooms, setRooms] = useState<RoomRecord[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [todayMeal, setTodayMeal] = useState<string>('Standard Mess Timings Active');
   const [messMenu, setMessMenu] = useState<WeeklyMessMenu | null>(null);
   const [isLodgeModalOpen, setIsLodgeModalOpen] = useState(false);
@@ -74,6 +80,12 @@ export const ResidentOverviewPage: React.FC = () => {
     // Real-time mess menu
     const unsubMenu = subscribeMessMenu(menu => setMessMenu(menu));
 
+    // Real-time notifications for resident
+    const unsubNotif = subscribeNotifications(
+      { uid: user.uid, role: 'resident' },
+      notifs => setNotifications(notifs)
+    );
+
     setRooms(getStoredRooms());
 
     const schedule = getStoredMealSchedule();
@@ -86,12 +98,17 @@ export const ResidentOverviewPage: React.FC = () => {
       unsubTickets();
       unsubAnn();
       unsubMenu();
+      unsubNotif();
     };
   }, [user]);
 
   const currentRoom = rooms.find(
     r => r.roomNumber === user?.roomNumber && r.block === user?.block
   );
+
+  const roommates = currentRoom
+    ? currentRoom.beds.filter(b => b.residentId && b.residentId !== user?.uid)
+    : [];
 
   const openTickets = tickets.filter(t => t.status !== 'Resolved').length;
 
@@ -460,6 +477,45 @@ export const ResidentOverviewPage: React.FC = () => {
               {currentRoom && currentRoom.occupied >= currentRoom.capacity ? 'Fully Occupied' : 'Allocated Active'}
             </div>
           </div>
+        </div>
+
+        {/* Roommates Roster (Requirement 7: Room, Bed, Roommates) */}
+        <div style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid var(--neutral-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <Users size={16} color="var(--brand-blue)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--neutral-dark)', textTransform: 'uppercase' }}>
+              Roommates in Room {user?.roomNumber || '204'}
+            </span>
+          </div>
+          {roommates.length === 0 ? (
+            <div style={{ fontSize: '0.82rem', color: 'var(--neutral-muted)' }}>
+              No other roommate is currently assigned to this room.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {roommates.map(m => (
+                <div
+                  key={m.bedNumber}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    background: '#ffffff',
+                    border: '1px solid var(--neutral-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, background: 'var(--brand-blue-subtle)', color: 'var(--brand-blue)', padding: '2px 6px', borderRadius: '4px' }}>
+                    {m.bedNumber}
+                  </span>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--neutral-dark)' }}>
+                    {m.residentName || 'Resident Student'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -871,6 +927,300 @@ export const ResidentOverviewPage: React.FC = () => {
               ))}
           </div>
         )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* SECTION D: UPDATES (Latest Notifications)                    */}
+      {/* ============================================================ */}
+      <div
+        className="card-updates"
+        style={{
+          borderRadius: '16px',
+          padding: '24px 28px',
+          marginBottom: '28px',
+          background: '#ffffff',
+          border: '1px solid var(--neutral-border)',
+          boxShadow: 'var(--shadow-xs)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: '#eff6ff',
+                color: '#2563eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Bell size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0 }}>
+                Updates &amp; Live Alerts
+              </h2>
+              <span style={{ fontSize: '0.8rem', color: 'var(--neutral-muted)' }}>
+                Real-time notifications regarding room allocations, ticket changes, and hostel operations
+              </span>
+            </div>
+          </div>
+          {notifications.filter(n => !n.read).length > 0 && (
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#fee2e2', color: '#dc2626', padding: '3px 8px', borderRadius: '6px' }}>
+              {notifications.filter(n => !n.read).length} Unread
+            </span>
+          )}
+        </div>
+
+        {notifications.length === 0 ? (
+          <div style={{ padding: '28px', textAlign: 'center', color: 'var(--neutral-muted)', background: '#f8fafc', borderRadius: '12px', border: '1px dashed var(--neutral-border)' }}>
+            <Bell size={28} style={{ opacity: 0.3, margin: '0 auto 8px' }} />
+            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>No notifications yet</div>
+            <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>Real-time updates regarding your tickets and room will appear here.</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {notifications.slice(0, 4).map(n => {
+              const isCrit = n.priority === 'Critical' || n.type === 'critical';
+              const isHigh = n.priority === 'High';
+              return (
+                <div
+                  key={n.id}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    background: isCrit ? '#fef2f2' : (n.read ? '#ffffff' : '#f8faff'),
+                    border: `1px solid ${isCrit ? '#fecaca' : (n.read ? '#f1f5f9' : '#e0e7ff')}`,
+                    borderLeft: isCrit ? '4px solid #ef4444' : isHigh ? '4px solid #f59e0b' : (n.read ? '4px solid transparent' : '4px solid #3b82f6'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.84rem', fontWeight: 700, color: isCrit ? '#b91c1c' : 'var(--neutral-dark)' }}>
+                        {n.title}
+                      </span>
+                      {n.priority && (
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, padding: '1px 5px', borderRadius: '4px', background: isCrit ? '#fee2e2' : isHigh ? '#fef3c7' : '#f1f5f9', color: isCrit ? '#991b1b' : isHigh ? '#92400e' : '#64748b' }}>
+                          {n.priority}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: isCrit ? '#7f1d1d' : 'var(--neutral-muted)', marginTop: '2px' }}>
+                      {n.message}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>
+                    {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* SECTION E: IMPORTANT (Active Notices)                        */}
+      {/* ============================================================ */}
+      <div
+        className="card-notices"
+        style={{
+          borderRadius: '16px',
+          padding: '24px 28px',
+          marginBottom: '28px',
+          background: '#ffffff',
+          border: '1px solid var(--neutral-border)',
+          boxShadow: 'var(--shadow-xs)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'var(--brand-purple-subtle)',
+                color: 'var(--brand-purple)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Megaphone size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0 }}>
+                Important Hostel Notices
+              </h2>
+              <span style={{ fontSize: '0.8rem', color: 'var(--neutral-muted)' }}>
+                Official campus directives, mess timings, and administrative bulletins
+              </span>
+            </div>
+          </div>
+          <Link
+            to="/resident/announcements"
+            style={{
+              fontSize: '0.82rem',
+              color: 'var(--brand-purple)',
+              fontWeight: 700,
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            View All ({announcements.length}) <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        {announcements.length === 0 ? (
+          <div style={{ padding: '28px', textAlign: 'center', color: 'var(--neutral-muted)', background: '#f8fafc', borderRadius: '12px', border: '1px dashed var(--neutral-border)' }}>
+            <Megaphone size={28} style={{ opacity: 0.3, margin: '0 auto 8px' }} />
+            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>No active notices</div>
+            <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>Campus administrative notices will appear on this board.</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+            {announcements.slice(0, 3).map(a => {
+              const isUrgent = a.priority === 'Critical' || a.priority === 'High';
+              return (
+                <div
+                  key={a.id}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    background: isUrgent ? '#fffaf5' : '#f8fafc',
+                    border: `1px solid ${isUrgent ? '#fed7aa' : 'var(--neutral-border)'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '10px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: isUrgent ? '#fee2e2' : '#e0e7ff',
+                          color: isUrgent ? '#b91c1c' : '#4338ca',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        {a.priority || 'Notice'} • {a.category}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                        {new Date(a.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h4 style={{ margin: '0 0 6px 0', fontSize: '0.92rem', fontWeight: 800, color: 'var(--neutral-dark)' }}>
+                      {a.title}
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--neutral-muted)', lineHeight: 1.4 }}>
+                      {a.content}
+                    </p>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    Author: {a.author}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* SECTION F: SMART HELP (AI Assistant Quick Prompts)           */}
+      {/* ============================================================ */}
+      <div
+        className="card-smarthelp"
+        style={{
+          borderRadius: '16px',
+          padding: '24px 28px',
+          marginBottom: '28px',
+          background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
+          border: '1px solid #bae6fd',
+          boxShadow: 'var(--shadow-xs)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: '#0284c7',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Bot size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0369a1', margin: 0 }}>
+                SmartHelp Copilot
+              </h2>
+              <span style={{ fontSize: '0.78rem', color: '#0284c7' }}>
+                Ask instant natural queries about your room, mess menu, ticket status, and campus safety
+              </span>
+            </div>
+          </div>
+          <span style={{ fontSize: '0.72rem', background: '#ffffff', color: '#0284c7', fontWeight: 700, padding: '4px 10px', borderRadius: '20px', border: '1px solid #bae6fd' }}>
+            Available 24/7 (Floating in bottom-right)
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {[
+            'Which room am I in?',
+            'Who are my roommates?',
+            "What's today's mess?",
+            'Show my pending complaints.',
+            'What happened to my complaint?',
+            'Are there any important notices?',
+            'What should I do if my fan is sparking?'
+          ].map(sampleQ => (
+            <button
+              key={sampleQ}
+              onClick={() => {
+                const triggerBtn = document.getElementById('ai-assistant-toggle-btn');
+                if (triggerBtn) triggerBtn.click();
+              }}
+              style={{
+                padding: '7px 13px',
+                borderRadius: '20px',
+                background: '#ffffff',
+                border: '1px solid #bae6fd',
+                color: '#0369a1',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+              }}
+            >
+              <Sparkles size={12} color="#0284c7" />
+              {sampleQ}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Lodge Ticket Modal */}

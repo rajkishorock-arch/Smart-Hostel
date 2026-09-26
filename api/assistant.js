@@ -365,6 +365,32 @@ SECURITY & PRIVACY CONSTRAINTS (STRICT):
         noticesSummary = clientContext.notices.map(n => `- [${n.priority || 'Notice'}] ${n.title} (${n.category || 'General'})`).join('\n');
       }
 
+      // Vacancies list
+      let vacanciesSummary = 'No rooms with vacancies loaded or all rooms occupied.';
+      if (clientContext.vacantRooms && Array.isArray(clientContext.vacantRooms) && clientContext.vacantRooms.length > 0) {
+        vacanciesSummary = clientContext.vacantRooms.map(r => `• Room ${r.roomNumber} (${r.block}): ${r.availableBeds} vacant bed(s) available`).join('\n');
+      }
+
+      // Unallocated residents
+      let unallocatedSummary = 'All enrolled residents currently have room allocations.';
+      if (clientContext.unallocatedResidents && Array.isArray(clientContext.unallocatedResidents) && clientContext.unallocatedResidents.length > 0) {
+        unallocatedSummary = `${clientContext.unallocatedResidents.length} unallocated resident(s):\n` + clientContext.unallocatedResidents.map(u => `• ${u.name}`).join('\n');
+      }
+
+      // Repeated issues
+      let repeatedIssuesSummary = 'No repeated maintenance issues detected currently.';
+      if (clientContext.repeatedIssues && Array.isArray(clientContext.repeatedIssues) && clientContext.repeatedIssues.length > 0) {
+        repeatedIssuesSummary = clientContext.repeatedIssues.map(ri => `• Room ${ri.room}: ${ri.count} ${ri.category} tickets (${ri.recentDates.join(', ')})`).join('\n');
+      }
+
+      // Operational priorities
+      let prioritiesSummary = 'All queues clear. No immediate escalations.';
+      if (clientContext.operationalPriorities && Array.isArray(clientContext.operationalPriorities) && clientContext.operationalPriorities.length > 0) {
+        prioritiesSummary = clientContext.operationalPriorities.map(op => `• [${op.priority}] ${op.title}: ${op.reason}`).join('\n');
+      }
+
+      const topCategoryText = clientContext.highestCategory ? `${clientContext.highestCategory.category} (${clientContext.highestCategory.count} tickets)` : 'None';
+
       contextPrompt = `
 AUTHENTICATED USER CONTEXT (ROLE: WARDEN / CAMPUS AUTHORITY):
 - Warden Name: ${profile.name}
@@ -377,6 +403,7 @@ HOSTEL OPERATIONAL METRICS (DERIVED STRICTLY FROM REAL FIRESTORE DATA):
 - Occupied Beds: ${stats.occupiedBeds}
 - Available Beds: ${stats.availableBeds}
 - Current Occupancy Rate: ${stats.occupancyRate}%
+- Highest Maintenance Category: ${topCategoryText}
 - Active Maintenance Tickets:
   * Open: ${stats.openTickets}
   * In Progress: ${stats.inProgressTickets}
@@ -384,6 +411,18 @@ HOSTEL OPERATIONAL METRICS (DERIVED STRICTLY FROM REAL FIRESTORE DATA):
   * Resolved: ${stats.resolvedTickets}
 - Recent Maintenance Queue:
 ${ticketsList}
+
+ROOMS WITH VACANCIES:
+${vacanciesSummary}
+
+UNALLOCATED RESIDENTS:
+${unallocatedSummary}
+
+REPEATED MAINTENANCE ISSUES:
+${repeatedIssuesSummary}
+
+WHAT NEEDS ATTENTION (PRIORITIZED ITEMS):
+${prioritiesSummary}
 
 MESS OPERATIONS OVERVIEW (REAL FIRESTORE MENU):
 - Today's Menu (${todayMenu.day || 'Today'}):
@@ -536,34 +575,29 @@ function generateIntelligentCampusResponse(query, role, profile, clientContext =
     const myBlock = clientContext.room?.block || profile.block || 'Block A';
     const myBed = clientContext.room?.bedNumber || profile.bedNumber || 'Bed 1';
 
-    if (q.includes('my room') || q.includes('where is my room') || q.includes('room number') || q.includes('allocation')) {
-      return `You are currently allocated to Room ${myRoom}, ${myBlock} in ${profile.hostel || CAMPUS_DEFAULTS.hostelName}. Your assigned bed is ${myBed}. You can verify your complete allocation details anytime under "My Hostel → Room & Bed".`;
+    // 1. "Which room am I in?"
+    if (q.includes('which room') || q.includes('my room') || q.includes('where is my room') || q.includes('room number') || q.includes('what room')) {
+      return `You are currently allocated to Room ${myRoom}, ${myBlock} in ${profile.hostel || CAMPUS_DEFAULTS.hostelName}. Your assigned bed is ${myBed}.`;
     }
 
     if (q.includes('block') || q.includes('which block')) {
       return `Your allocated block is ${myBlock} in ${profile.hostel || CAMPUS_DEFAULTS.hostelName}.`;
     }
 
-    if (q.includes('bed') || q.includes('bed number')) {
+    if (q.includes('bed') || q.includes('bed number') || q.includes('which bed')) {
       return `Your assigned bed is ${myBed} in Room ${myRoom}, ${myBlock}.`;
     }
 
+    // 2. "Who are my roommates?"
     if (q.includes('roommate') || q.includes('who is my roommate') || q.includes('room partner')) {
-      if (clientContext.room?.roommates && clientContext.room.roommates.length > 0) {
+      if (clientContext.room?.roommates && Array.isArray(clientContext.room.roommates) && clientContext.room.roommates.length > 0) {
         const mates = clientContext.room.roommates.map(m => `${m.bed}: ${m.name}`).join(', ');
-        return `In Room ${myRoom}, your registered roommate(s): ${mates}.`;
+        return `Your registered roommate(s) in Room ${myRoom}: ${mates}.`;
       }
-      return `In Room ${myRoom}, no other roommate is currently assigned or data is synchronizing.`;
+      return `No other roommates are currently assigned to Room ${myRoom}.`;
     }
 
-    if (q.includes('notice') || q.includes('announcement')) {
-      if (clientContext.notices && clientContext.notices.length > 0) {
-        const list = clientContext.notices.slice(0, 3).map(n => `• [${n.priority || 'Notice'}] ${n.title}`).join('\n');
-        return `Active Hostel Notices:\n${list}\n\nView all notices on your Dashboard or Notice Board.`;
-      }
-      return `There are currently no active hostel notices posted on the board.`;
-    }
-
+    // 3. "What's today's mess?"
     if (q.includes('mess') || q.includes('food') || q.includes('menu') || q.includes('meal') || q.includes('lunch') || q.includes('dinner') || q.includes('breakfast')) {
       const menu = clientContext.todayMenu || CAMPUS_DEFAULTS.todayMenu;
       return `Today's Mess Schedule (${menu.day || 'Today'}):
@@ -571,65 +605,129 @@ function generateIntelligentCampusResponse(query, role, profile, clientContext =
 • Lunch (${CAMPUS_DEFAULTS.messTimings.lunch}): ${menu.lunch || 'Not scheduled'}
 • Snacks (${CAMPUS_DEFAULTS.messTimings.snacks}): ${menu.snacks || 'Evening tea & snacks'}
 • Dinner (${CAMPUS_DEFAULTS.messTimings.dinner}): ${menu.dinner || 'Not scheduled'}
-${menu.specialNote ? `* Note: ${menu.specialNote}` : ''}
-
-To view the full 7-day schedule, please navigate to "Smart Mess → Weekly Menu".`;
+${menu.specialNote ? `* Note: ${menu.specialNote}` : ''}`;
     }
 
-    if (q.includes('ticket') || q.includes('issue') || q.includes('maintenance')) {
-      if (q.includes('report') || q.includes('how do i report') || q.includes('file')) {
-        return `To report a maintenance problem:
-1. Navigate to "Maintenance → Report Issue" (/resident/maintenance/report).
-2. Choose a category: Electrical, Plumbing, Carpentry, Cleaning, Infrastructure, or Other (with automatic AI classification).
-3. Provide a clear description and submit.
-Our facility team attends to critical requests urgently and standard requests within 24 hours.`;
+    // 4. "Show my pending complaints." & "What happened to my complaint?"
+    if (q.includes('pending complaint') || q.includes('pending ticket') || q.includes('show my complaints') || q.includes('my complaints') || q.includes('my pending')) {
+      const myTickets = clientContext.tickets || [];
+      const pending = myTickets.filter(t => t.status !== 'Resolved');
+      if (pending.length > 0) {
+        const lines = pending.map(t => `• Ticket #${t.id}: "${t.title || t.category}" (${t.category} | Priority: ${t.priority} | Status: ${t.status})`).join('\n');
+        return `Your Pending Maintenance Complaints (${pending.length}):\n${lines}\n\nYou can track timeline progress under "Maintenance → My Tickets".`;
       }
+      return `You have no pending complaints at this time.`;
+    }
 
-      if (clientContext.tickets && clientContext.tickets.length > 0) {
-        const ticketLines = clientContext.tickets.map(
-          t => `• Ticket #${t.id}: "${t.title}" (${t.category} | Priority: ${t.priority} | Status: ${t.status})`
-        ).join('\n');
-        return `Your Maintenance Tickets:\n${ticketLines}\n\nYou can track real-time updates and timelines under "Maintenance → My Tickets".`;
+    if (q.includes('what happened to my complaint') || q.includes('status of my complaint') || q.includes('my ticket status') || q.includes('complaint status')) {
+      const myTickets = clientContext.tickets || [];
+      if (myTickets.length > 0) {
+        const latest = myTickets[0];
+        return `Your most recent complaint #${latest.id} ("${latest.title || latest.category}") is currently in "${latest.status}" status (${latest.category}, Priority: ${latest.priority}). Track full updates under "Maintenance → My Tickets".`;
       }
-      return `You have no active maintenance tickets at this moment. You can report any room issue under "Maintenance → Report Issue".`;
+      return `You do not have any registered complaints in the system.`;
+    }
+
+    // 5. "Are there any important notices?"
+    if (q.includes('notice') || q.includes('announcement') || q.includes('important notice')) {
+      if (clientContext.notices && Array.isArray(clientContext.notices) && clientContext.notices.length > 0) {
+        const list = clientContext.notices.slice(0, 4).map(n => `• [${n.priority || 'Notice'}] ${n.title}`).join('\n');
+        return `Active Hostel Notices (${clientContext.notices.length}):\n${list}\n\nView details under "Hostel Notice Board".`;
+      }
+      return `There are currently no active hostel notices posted on the board.`;
+    }
+
+    // 6. Fan sparking / Electrical hazard guidance
+    if (q.includes('fan is sparking') || q.includes('sparking') || q.includes('spark') || q.includes('shock')) {
+      return `⚠️ ELECTRICAL HAZARD ADVISORY:
+1. Avoid touching exposed electrical components, switches, or the sparking fan.
+2. Switch off the room power breaker immediately if accessible safely.
+3. Keep clear of the fixture and alert roommates.
+4. Contact hostel maintenance and the Emergency Desk (+91 11 2600 0001) immediately.
+Do not attempt repairs yourself. An authorized technician will inspect the premises.`;
     }
   }
 
   // Warden Specific Queries
   if (role === 'warden') {
-    const stats = clientContext.stats || {
-      totalResidents: 24,
-      totalRooms: 15,
-      totalBeds: 32,
-      occupiedBeds: 24,
-      availableBeds: 8,
-      occupancyRate: 75,
-      openTickets: 2,
-      inProgressTickets: 1,
-      criticalTickets: 1,
-      resolvedTickets: 4
-    };
+    const stats = clientContext.stats || null;
 
-    if (q.includes('occupan') || q.includes('enrolled') || q.includes('how many residents') || q.includes('available bed') || q.includes('bed')) {
-      return `Campus Occupancy Snapshot (Real Firestore Data):
-• Total Enrolled Residents: ${stats.totalResidents}
-• Total Room Count: ${stats.totalRooms} rooms
-• Total Bed Capacity: ${stats.totalBeds} beds
-• Occupied Beds: ${stats.occupiedBeds} beds
-• Available Vacant Beds: ${stats.availableBeds} beds
-• Current Occupancy Rate: ${stats.occupancyRate}%
-
-To manage allocations, open "Hostel → Rooms & Allocation".`;
+    // "How many beds are available?"
+    if (q.includes('how many beds are available') || q.includes('available bed') || q.includes('vacant bed') || q.includes('bed availability')) {
+      if (!stats) return 'Not enough data available.';
+      return `${stats.availableBeds} bed(s) are available out of ${stats.totalBeds} total beds (${stats.occupiedBeds} occupied, ${stats.occupancyRate}% occupancy rate).`;
     }
 
-    if (q.includes('ticket') || q.includes('maintenance') || q.includes('urgent') || q.includes('critical') || q.includes('pending') || q.includes('open')) {
-      return `Maintenance Operational Status (Real Firestore Data):
-• Open Tickets: ${stats.openTickets}
-• In Progress: ${stats.inProgressTickets}
-• Critical Tickets: ${stats.criticalTickets}
-• Resolved: ${stats.resolvedTickets}
+    // "Which rooms have vacancies?"
+    if (q.includes('which rooms have vacancies') || q.includes('vacancies') || q.includes('rooms with vacancy') || q.includes('vacant room')) {
+      const vacancies = clientContext.vacantRooms;
+      if (vacancies && Array.isArray(vacancies) && vacancies.length > 0) {
+        const list = vacancies.map(r => `• Room ${r.roomNumber} (${r.block}): ${r.availableBeds} vacant bed(s) available`).join('\n');
+        return `Rooms with Vacancies (${vacancies.length} rooms):\n${list}`;
+      }
+      return `All rooms are currently at full capacity. No vacancies available.`;
+    }
 
-Please visit "Maintenance → Resolution & Actions" to inspect the timeline and dispatch technicians.`;
+    // "How many complaints are pending?"
+    if (q.includes('how many complaints are pending') || q.includes('pending complaints') || q.includes('pending tickets')) {
+      if (!stats) return 'Not enough data available.';
+      const pendingCount = (stats.openTickets || 0) + (stats.inProgressTickets || 0);
+      return `${pendingCount} complaints are currently pending resolution (${stats.openTickets} open, ${stats.inProgressTickets} in progress).`;
+    }
+
+    // "How many critical complaints exist?"
+    if (q.includes('how many critical complaints') || q.includes('critical complaints') || q.includes('critical tickets') || q.includes('urgent complaints')) {
+      if (!stats) return 'Not enough data available.';
+      return `${stats.criticalTickets} critical maintenance complaint(s) currently exist in the queue requiring urgent resolution.`;
+    }
+
+    // "Which maintenance category is highest?"
+    if (q.includes('which maintenance category is highest') || q.includes('highest category') || q.includes('most complaints')) {
+      if (clientContext.highestCategory && clientContext.highestCategory.category && clientContext.highestCategory.category !== 'None') {
+        return `${clientContext.highestCategory.category} is the highest maintenance category with ${clientContext.highestCategory.count} tickets logged.`;
+      }
+      return `Not enough data available.`;
+    }
+
+    // "Which rooms have repeated complaints?"
+    if (q.includes('repeated complaints') || q.includes('repeated issues') || q.includes('which rooms have repeated')) {
+      const repeated = clientContext.repeatedIssues;
+      if (repeated && Array.isArray(repeated) && repeated.length > 0) {
+        const list = repeated.map(r => `• Room ${r.room}: ${r.count} ${r.category} tickets (${r.recentDates.join(', ')})`).join('\n');
+        return `Repeated Maintenance Issues Detected (${repeated.length}):\n${list}\n\nFacility physical inspection recommended.`;
+      }
+      return `No repeated complaints detected across hostel rooms.`;
+    }
+
+    // "Which residents are unallocated?"
+    if (q.includes('unallocated') || q.includes('which residents are unallocated') || q.includes('students without room')) {
+      const unalloc = clientContext.unallocatedResidents;
+      if (unalloc && Array.isArray(unalloc) && unalloc.length > 0) {
+        const list = unalloc.map(u => `• ${u.name}`).join('\n');
+        return `${unalloc.length} resident(s) are currently unallocated:\n${list}\n\nUse Smart Allocate under "Hostel → Rooms & Allocation" to assign rooms.`;
+      }
+      return `All enrolled residents currently have verified room allocations.`;
+    }
+
+    // "What is today's mess?"
+    if (q.includes('today\'s mess') || q.includes('what is today\'s mess') || q.includes('mess operations') || q.includes('mess menu')) {
+      const menu = clientContext.todayMenu || CAMPUS_DEFAULTS.todayMenu;
+      return `Today's Mess Operations (${menu.day || 'Today'}):
+• Breakfast (${CAMPUS_DEFAULTS.messTimings.breakfast}): ${menu.breakfast || 'Not scheduled'}
+• Lunch (${CAMPUS_DEFAULTS.messTimings.lunch}): ${menu.lunch || 'Not scheduled'}
+• Snacks (${CAMPUS_DEFAULTS.messTimings.snacks}): ${menu.snacks || 'Tea & Snacks'}
+• Dinner (${CAMPUS_DEFAULTS.messTimings.dinner}): ${menu.dinner || 'Not scheduled'}
+Expected meal count: ~${stats ? stats.totalResidents : 'enrolled'} residents.`;
+    }
+
+    // "What needs attention right now?"
+    if (q.includes('needs attention') || q.includes('what needs attention right now') || q.includes('urgent action') || q.includes('priorities')) {
+      const priorities = clientContext.operationalPriorities;
+      if (priorities && Array.isArray(priorities) && priorities.length > 0) {
+        const list = priorities.map(p => `• [${p.priority}] ${p.title}: ${p.reason}`).join('\n');
+        return `Operational Items Needing Attention (${priorities.length}):\n${list}`;
+      }
+      return `All operational queues are clear. No items currently require immediate attention.`;
     }
 
     if (q.includes('notice') || q.includes('announcement')) {
@@ -640,32 +738,22 @@ Please visit "Maintenance → Resolution & Actions" to inspect the timeline and 
       return `There are currently no active notices on the board. You can post a new notice from "Hostel Notice Board".`;
     }
 
-    if (q.includes('mess') || q.includes('menu') || q.includes('food')) {
-      const menu = clientContext.todayMenu || CAMPUS_DEFAULTS.todayMenu;
-      return `Today's Mess Operations (${menu.day || 'Today'}):
-• Breakfast (${CAMPUS_DEFAULTS.messTimings.breakfast}): ${menu.breakfast || 'Not scheduled'}
-• Lunch (${CAMPUS_DEFAULTS.messTimings.lunch}): ${menu.lunch || 'Not scheduled'}
-• Snacks (${CAMPUS_DEFAULTS.messTimings.snacks}): ${menu.snacks || 'Tea & Snacks'}
-• Dinner (${CAMPUS_DEFAULTS.messTimings.dinner}): ${menu.dinner || 'Not scheduled'}
-Expected meal count: ~${stats.totalResidents} residents. To edit this menu, open "Smart Mess → Today's Menu".`;
-    }
-
     if (q.includes('operation') || q.includes('status') || q.includes('overview') || q.includes('summary') || q.includes('insight')) {
+      if (!stats) return 'Not enough data available.';
       return `Campus Operations Summary (Real Firestore Data):
 1. Hostel Occupancy: ${stats.occupancyRate}% (${stats.occupiedBeds}/${stats.totalBeds} beds occupied, ${stats.availableBeds} available).
 2. Maintenance: ${stats.openTickets} open, ${stats.inProgressTickets} in progress, ${stats.criticalTickets} critical ticket(s).
-3. Residents: ${stats.totalResidents} enrolled students.
+3. Residents: ${stats.totalResidents} enrolled students (${stats.unallocatedCount || 0} unallocated).
 4. Mess Service: Running on schedule. Main gate closes at ${CAMPUS_DEFAULTS.gateClosingTime}.`;
     }
   }
 
   // General Campus Fallback
-  return `I am SmartHostel AI, your verified campus administration assistant. I can assist you with:
+  return `I am SmartHostel AI, your verified campus administration assistant.
 ${role === 'resident'
-  ? '• Your room allocation, block, and assigned bed\n• Registered roommates in your unit\n• Today\'s and weekly mess menu schedules from Firestore\n• Tracking your maintenance tickets and reporting new issues\n• Active hostel notices and emergency procedures'
-  : '• Real-time occupancy rates and available bed counts from Firestore\n• Open, in-progress, and critical maintenance queues\n• Maintenance category and status breakdowns\n• Today\'s mess operations and catering schedules\n• Guidance on room allocation and ticket resolution workflows'
+  ? 'You can ask: "Which room am I in?", "Who are my roommates?", "What\'s today\'s mess?", "Show my pending complaints.", "Are there any important notices?", or ask emergency safety instructions.'
+  : 'You can ask: "How many beds are available?", "Which rooms have vacancies?", "How many complaints are pending?", "How many critical complaints exist?", "Which maintenance category is highest?", "Which rooms have repeated complaints?", "Which residents are unallocated?", or "What needs attention right now?".'
+}`;
 }
 
-Please let me know what details you would like to look up!`;
-}
 

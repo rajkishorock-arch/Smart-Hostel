@@ -34,7 +34,7 @@ Classify the resident's issue description into exactly ONE category:
 Electrical, Plumbing, Carpentry, Cleaning, Infrastructure, Other.
 
 Determine priority: Critical, High, Medium, Low.
-Safety Instruction: For dangerous hazards (sparks, exposed wire, smoke, gas smell, electrical burning, flooding, collapse), provide an immediate safety instruction alert and set priority to Critical.
+Safety Instruction: For dangerous hazards (sparks, exposed wire, smoke, gas smell, electrical burning, flooding, collapse), provide an immediate safety instruction alert, set safetyFlag to true, provide safe immediate guidance, and set priority to Critical.
 
 Return concise structured JSON only.
 
@@ -43,6 +43,9 @@ Required JSON fields:
 - priority: exactly one of "Critical", "High", "Medium", "Low"
 - urgency: exactly one of "High", "Medium", "Low"
 - summary: concise factual summary
+- recommendedDepartment: e.g. "Electrical Maintenance Division", "Plumbing & Water Services Team", etc.
+- safetyFlag: boolean
+- safeGuidance: safe immediate advisory for resident (never provide dangerous DIY repair steps)
 - suggestedAction: operational action for staff/technician
 - reasoning: why this category and priority were selected
 - confidence: integer percentage 60 to 98
@@ -78,11 +81,23 @@ Issue Description: "${text}"`;
           let priority = validPriorities.includes(parsed.priority) ? parsed.priority : 'Medium';
           if (priority === 'Urgent') priority = 'Critical';
 
+          const departmentMap = {
+            Electrical: 'Electrical Maintenance Division',
+            Plumbing: 'Plumbing & Water Services Team',
+            Carpentry: 'Carpentry & Joinery Workshop',
+            Cleaning: 'Housekeeping & Sanitation Unit',
+            Infrastructure: 'Civil Maintenance & Structural Works',
+            Other: 'Campus Facility Administration'
+          };
+
           return res.status(200).json({
             category,
             priority,
             urgency: parsed.urgency || 'Medium',
             summary: parsed.summary || `${category} issue reported in Room ${room || 'unit'}.`,
+            recommendedDepartment: parsed.recommendedDepartment || departmentMap[category],
+            safetyFlag: parsed.safetyFlag ?? (priority === 'Critical' || !!parsed.safetyAlert),
+            safeGuidance: parsed.safeGuidance || (priority === 'Critical' ? 'Avoid touching hazard and report to hostel office immediately.' : 'Do not attempt repairs yourself.'),
             suggestedAction: parsed.suggestedAction || 'Warden dispatch required for physical assessment.',
             reasoning: parsed.reasoning || `Detected markers aligning with ${category.toLowerCase()} maintenance.`,
             confidence: Math.min(98, Math.max(50, Number(parsed.confidence) || 90)),
@@ -110,13 +125,21 @@ function computeFallbackClassification(text, room, block) {
 
   const isSparking = normalized.includes('spark') || normalized.includes('shock') || normalized.includes('burning') || normalized.includes('fire') || normalized.includes('smoke') || normalized.includes('exposed wire');
   const isFlood = normalized.includes('flood') || normalized.includes('burst') || normalized.includes('overflow');
+  const isGas = normalized.includes('gas smell') || normalized.includes('gas leak');
   const isDoorLock = normalized.includes('cannot lock') || normalized.includes('lock jammed');
 
   let safetyAlert = undefined;
-  if (isSparking) {
-    safetyAlert = '⚠️ ELECTRICAL SAFETY HAZARD: Switch off room power breaker immediately. Do NOT touch appliances or wires. Alert the Hostel Office and Warden Desk immediately.';
+  let safeGuidance = 'Do not attempt hazardous repairs yourself. An authorized technician will inspect the premises.';
+
+  if (isGas) {
+    safetyAlert = '⚠️ GAS HAZARD DETECTED: Move away from the source immediately and follow hostel emergency procedure.';
+    safeGuidance = 'Move away from the source immediately, avoid using switches or open flames, and follow hostel emergency procedure.';
+  } else if (isSparking) {
+    safetyAlert = '⚠️ ELECTRICAL SPARK HAZARD: Avoid touching exposed electrical components and contact hostel maintenance.';
+    safeGuidance = 'Avoid touching exposed electrical components, turn off room breaker if safe, and contact hostel maintenance.';
   } else if (isFlood) {
-    safetyAlert = '⚠️ PLUMBING EMERGENCY: Shut off the nearest water isolation valve. Keep electrical gadgets off the floor. Report immediately to Hostel Desk.';
+    safetyAlert = '⚠️ FLOODING ALERT: Avoid electrical contact and report immediately.';
+    safeGuidance = 'Avoid electrical contact with standing water, keep gadgets elevated, and report immediately.';
   }
 
   // Keyword Matching
@@ -144,7 +167,7 @@ function computeFallbackClassification(text, room, block) {
   let priority = 'Medium';
   let urgency = 'Medium';
 
-  if (isSparking || isFlood) {
+  if (isSparking || isFlood || isGas) {
     priority = 'Critical';
     urgency = 'High';
   } else if (isDoorLock || normalized.includes('urgent') || normalized.includes('emergency')) {
@@ -155,11 +178,23 @@ function computeFallbackClassification(text, room, block) {
     urgency = 'Low';
   }
 
+  const departmentMap = {
+    Electrical: 'Electrical Maintenance Division',
+    Plumbing: 'Plumbing & Water Services Team',
+    Carpentry: 'Carpentry & Joinery Workshop',
+    Cleaning: 'Housekeeping & Sanitation Unit',
+    Infrastructure: 'Civil Maintenance & Structural Works',
+    Other: 'Campus Facility Administration'
+  };
+
   return {
     category,
     priority,
     urgency,
     summary: `${category} maintenance inquiry for Room ${room || 'General Quarters'} (${block || 'Hostel Block'}).`,
+    recommendedDepartment: departmentMap[category] || 'Campus Facility Administration',
+    safetyFlag: priority === 'Critical' || !!safetyAlert,
+    safeGuidance,
     suggestedAction: priority === 'Critical' ? 'Immediate technician dispatch required.' : 'Schedule physical evaluation.',
     reasoning: matched.length > 0 ? `Detected keywords [${matched.slice(0, 3).join(', ')}]` : 'Classified based on campus facilities routing matrix.',
     confidence: matched.length > 0 ? 88 : 65,

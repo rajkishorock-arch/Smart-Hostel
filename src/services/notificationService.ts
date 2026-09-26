@@ -14,7 +14,7 @@ import {
 const LOCAL_KEY = 'sh_notifications_v1';
 export const EVENT_NOTIFICATIONS_CHANGED = 'sh_notifications_updated';
 
-function getStoredNotifications(): AppNotification[] {
+export function getStoredNotifications(): AppNotification[] {
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
     return raw ? JSON.parse(raw) : [];
