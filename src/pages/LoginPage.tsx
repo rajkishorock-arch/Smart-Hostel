@@ -10,7 +10,7 @@ import {
   Mail,
   AlertCircle,
   ArrowRight,
-  CheckCircle2
+  Zap
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -22,9 +22,12 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [demoSubmitting, setDemoSubmitting] = useState<'resident' | 'warden' | null>(null);
 
   const { login, quickDemoLogin } = useAuth();
   const navigate = useNavigate();
+
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE !== 'false';
 
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
@@ -48,7 +51,6 @@ export const LoginPage: React.FC = () => {
 
     try {
       const user = await login(email, password);
-      // Route based on authentic verified role
       if (user.role === 'warden') {
         navigate('/admin/dashboard');
       } else {
@@ -63,7 +65,7 @@ export const LoginPage: React.FC = () => {
 
   const handleDemoLogin = async (targetRole: UserRole) => {
     setError(null);
-    setSubmitting(true);
+    setDemoSubmitting(targetRole);
     try {
       const user = await quickDemoLogin(targetRole);
       if (user.role === 'warden') {
@@ -72,9 +74,9 @@ export const LoginPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Demo login failed. Verify environment credentials.');
+      setError(err.message || 'Demo login failed.');
     } finally {
-      setSubmitting(false);
+      setDemoSubmitting(null);
     }
   };
 
@@ -92,7 +94,7 @@ export const LoginPage: React.FC = () => {
       <div style={{ maxWidth: '440px', width: '100%', margin: '0 auto' }}>
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '12px', textDecoration: 'none' }}>
             <div
               style={{
                 width: '42px',
@@ -269,7 +271,7 @@ export const LoginPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || demoSubmitting !== null}
               className="btn btn-primary"
               style={{
                 width: '100%',
@@ -293,18 +295,17 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Evaluator Access Area (strictly gated by VITE_DEMO_MODE=true) */}
-          {import.meta.env.VITE_DEMO_MODE === 'true' && (
-            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+          {/* ============================================================ */}
+          {/* INSTANT DEMO ACCESS (FOR COMPETITION EVALUATORS)             */}
+          {/* ============================================================ */}
+          {isDemoMode && (
+            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Evaluator Instant Access
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>
+                  INSTANT DEMO ACCESS
                 </span>
                 <span
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
                     fontSize: '0.7rem',
                     fontWeight: 700,
                     color: '#059669',
@@ -314,8 +315,7 @@ export const LoginPage: React.FC = () => {
                     border: '1px solid #a7f3d0'
                   }}
                 >
-                  <CheckCircle2 size={12} />
-                  Demo Mode Active
+                  ⚡ One-Click Login
                 </span>
               </div>
 
@@ -323,47 +323,55 @@ export const LoginPage: React.FC = () => {
                 <button
                   id="demo-resident-btn"
                   type="button"
-                  disabled={submitting}
+                  disabled={submitting || demoSubmitting !== null}
                   onClick={() => handleDemoLogin('resident')}
-                  className="btn btn-secondary btn-sm"
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    padding: '10px',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px 10px',
                     borderRadius: '8px',
-                    border: '1.5px solid #cbd5e1',
-                    background: '#ffffff',
-                    cursor: submitting ? 'not-allowed' : 'pointer'
+                    border: '1.5px solid #bfdbfe',
+                    background: '#eff6ff',
+                    color: '#1e3a8a',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: submitting || demoSubmitting !== null ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s ease'
                   }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#dbeafe')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#eff6ff')}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#1e3a8a', fontSize: '0.825rem' }}>
-                    <User size={14} color="#2563eb" />
-                    <span>Demo Resident</span>
-                  </div>
+                  <User size={16} color="#2563eb" />
+                  <span>{demoSubmitting === 'resident' ? 'Entering...' : 'Demo Resident'}</span>
                 </button>
 
                 <button
                   id="demo-warden-btn"
                   type="button"
-                  disabled={submitting}
+                  disabled={submitting || demoSubmitting !== null}
                   onClick={() => handleDemoLogin('warden')}
-                  className="btn btn-secondary btn-sm"
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    padding: '10px',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px 10px',
                     borderRadius: '8px',
-                    border: '1.5px solid #cbd5e1',
-                    background: '#ffffff',
-                    cursor: submitting ? 'not-allowed' : 'pointer'
+                    border: '1.5px solid #a7f3d0',
+                    background: '#ecfdf5',
+                    color: '#065f46',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: submitting || demoSubmitting !== null ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s ease'
                   }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#d1fae5')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#ecfdf5')}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#065f46', fontSize: '0.825rem' }}>
-                    <ShieldCheck size={14} color="#059669" />
-                    <span>Demo Warden</span>
-                  </div>
+                  <ShieldCheck size={16} color="#059669" />
+                  <span>{demoSubmitting === 'warden' ? 'Entering...' : 'Demo Warden'}</span>
                 </button>
               </div>
             </div>

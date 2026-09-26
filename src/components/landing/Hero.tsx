@@ -133,8 +133,8 @@ export const Hero: React.FC = () => {
               </>
             )}
 
-            {/* Quick Demo Access Buttons for Evaluators (strictly gated by VITE_DEMO_MODE=true) */}
-            {import.meta.env.VITE_DEMO_MODE === 'true' && (
+            {/* Quick Demo Access Buttons for Evaluators (competition deployment) */}
+            {import.meta.env.VITE_DEMO_MODE !== 'false' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
                   id="hero-demo-resident-btn"

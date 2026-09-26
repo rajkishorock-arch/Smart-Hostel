@@ -11,6 +11,8 @@ export interface UserProfile {
   roomNumber: string;
   bedNumber: string;
   createdAt: string;
+  status?: string;
+  updatedAt?: string;
 }
 
 export type TicketCategory = 'Electrical' | 'Plumbing' | 'Carpentry' | 'Other';
