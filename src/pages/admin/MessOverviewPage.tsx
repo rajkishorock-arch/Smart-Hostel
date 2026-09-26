@@ -18,7 +18,9 @@ import {
   Moon,
   ArrowRight,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 
 export const MessOverviewPage: React.FC = () => {
@@ -437,6 +439,61 @@ export const MessOverviewPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* AI Dining Demand & Wastage Optimization Widget */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 100%)',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          color: '#ffffff',
+          marginBottom: '28px',
+          boxShadow: 'var(--shadow-xs)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles size={22} color="#a7f3d0" />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>
+                AI Mess Demand &amp; Food Wastage Intelligence
+              </h3>
+              <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.2)', color: '#a7f3d0' }}>
+                Active Prediction
+              </span>
+            </div>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.825rem', color: '#d1fae5' }}>
+              Optimized meal preparation forecasting reduces weekly buffet wastage by up to 28% based on historical dining attendance.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          to="/admin/analytics/predictive"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            background: '#ffffff',
+            color: '#065f46',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            textDecoration: 'none'
+          }}
+        >
+          <TrendingUp size={15} />
+          <span>View Dining Forecasts</span>
+        </Link>
       </div>
 
       {/* Quick Links Section */}

@@ -25,6 +25,10 @@ import { MaintenanceOverviewPage } from './pages/admin/MaintenanceOverviewPage';
 import { MaintenanceTicketsPage } from './pages/admin/MaintenanceTicketsPage';
 import { MaintenanceResolutionPage } from './pages/admin/MaintenanceResolutionPage';
 import { MaintenanceCategoriesPage } from './pages/admin/MaintenanceCategoriesPage';
+import { PredictiveAnalyticsPage } from './pages/admin/PredictiveAnalyticsPage';
+import { AdvancedReportsPage } from './pages/admin/AdvancedReportsPage';
+import { PreventiveMaintenancePage } from './pages/admin/PreventiveMaintenancePage';
+
 
 // Resident Portal Pages
 import { ResidentOverviewPage } from './pages/resident/ResidentOverviewPage';
@@ -180,6 +184,33 @@ export function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/maintenance/preventive"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <PreventiveMaintenancePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Intelligence & Analytics Suite */}
+          <Route
+            path="/admin/analytics/predictive"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <PredictiveAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics/reports"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <AdvancedReportsPage />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* ============================================================ */}
           {/* RESIDENT PORTAL ROUTES (Protected: allowedRole="resident")    */}

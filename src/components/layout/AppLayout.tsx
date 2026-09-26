@@ -26,7 +26,11 @@ import {
   ChevronRight,
   Bell,
   Home,
-  Search
+  Search,
+  TrendingUp,
+  BarChart3,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { SmartHostelAIAssistant } from '../common/SmartHostelAIAssistant';
 import { NotificationBell } from '../common/NotificationBell';
@@ -48,6 +52,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
+
+  // Synchronize dark theme attribute
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Global search shortcut Ctrl+K / Cmd+K
   useEffect(() => {
@@ -269,6 +287,33 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               >
                 <FolderKanban size={16} />
                 <span>Categories</span>
+              </NavLink>
+              <NavLink
+                to="/admin/maintenance/preventive"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active accent-maint' : ''}`}
+                onClick={closeMobile}
+                style={{ paddingLeft: '28px', fontSize: '0.82rem' }}
+              >
+                <Wrench size={16} />
+                <span>Preventive Assets</span>
+              </NavLink>
+
+              <div className="sidebar-nav-section" style={{ marginTop: '16px' }}>Intelligence &amp; Reports</div>
+              <NavLink
+                to="/admin/analytics/predictive"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <TrendingUp size={18} color={location.pathname === '/admin/analytics/predictive' ? 'var(--brand-purple)' : undefined} />
+                <span>Predictive AI Engine</span>
+              </NavLink>
+              <NavLink
+                to="/admin/analytics/reports"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <BarChart3 size={18} color={location.pathname === '/admin/analytics/reports' ? 'var(--brand-purple)' : undefined} />
+                <span>Advanced Reports &amp; BI</span>
               </NavLink>
             </>
           ) : (
@@ -524,6 +569,29 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 </kbd>
               </button>
             )}
+
+            {/* Theme Toggle Button (Dark / Light Mode) */}
+            <button
+              id="theme-toggle-btn"
+              onClick={() => setIsDarkMode(prev => !prev)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '34px',
+                height: '34px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-default)',
+                background: isDarkMode ? '#334155' : '#f8fafc',
+                color: isDarkMode ? '#facc15' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle Theme"
+            >
+              {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
 
             {/* Real-time Notification Bell */}
             <NotificationBell />

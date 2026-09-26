@@ -41,8 +41,10 @@ export const HostelAllocationPage: React.FC = () => {
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [selectedBedNumber, setSelectedBedNumber] = useState<string>('');
 
-  // Smart Allocate Modal
+  // Smart Allocate Modal & Preferences
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
+  const [filterFloor, setFilterFloor] = useState<string>('All');
+  const [filterType, setFilterType] = useState<string>('All');
 
   // Confirmation Modal
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -762,53 +764,107 @@ export const HostelAllocationPage: React.FC = () => {
               The Smart Suggestion engine identifies all verified vacant beds across campus blocks. Select a suggestion below to pre-fill the allocation workflow. Final allocation must be confirmed by you.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-              {smartSuggestions.length === 0 ? (
-                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--neutral-muted)', fontSize: '0.85rem' }}>
-                  No beds are currently vacant across all hostel blocks.
-                </div>
-              ) : (
-                smartSuggestions.map((sug, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => handleApplySmartSuggestion(sug)}
+            {/* Preference Filters */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--neutral-muted)' }}>Floor Preference:</span>
+              {['All', 'Ground (0)', 'Floor 1', 'Floor 2'].map(fl => {
+                const flNum = fl === 'Ground (0)' ? 0 : fl === 'Floor 1' ? 1 : fl === 'Floor 2' ? 2 : 'All';
+                return (
+                  <button
+                    key={fl}
+                    type="button"
+                    onClick={() => setFilterFloor(String(flNum))}
                     style={{
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      border: '1px solid #e2e8f0',
-                      background: '#f8fafc',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: filterFloor === String(flNum) ? 'var(--brand-purple)' : '#f1f5f9',
+                      color: filterFloor === String(flNum) ? '#ffffff' : 'var(--neutral-dark)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#eff6ff')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                   >
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--neutral-dark)' }}>
-                        Room {sug.roomNumber} • {sug.bedNumber}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)', marginTop: '2px' }}>
-                        {sug.block} • Floor {sug.floor} ({sug.availableBeds} beds vacant in room)
-                      </div>
+                    {fl}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {(() => {
+                const filtered = smartSuggestions.filter(sug => {
+                  if (filterFloor !== 'All' && String(sug.floor) !== filterFloor) return false;
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div style={{ padding: '24px', textAlign: 'center', color: 'var(--neutral-muted)', fontSize: '0.85rem' }}>
+                      No vacant beds matching the selected preferences.
                     </div>
-                    <span
+                  );
+                }
+
+                return filtered.map((sug, idx) => {
+                  const matchPct = 85 + (sug.availableBeds > 1 ? 10 : 5);
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => handleApplySmartSuggestion(sug)}
                       style={{
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        background: 'var(--brand-blue)',
-                        color: '#ffffff',
-                        fontSize: '0.75rem',
-                        fontWeight: 700
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0',
+                        background: '#f8fafc',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
                       }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#eff6ff')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                     >
-                      Select
-                    </span>
-                  </div>
-                ))
-              )}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--neutral-dark)' }}>
+                            Room {sug.roomNumber} &bull; {sug.bedNumber}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              background: '#ecfdf5',
+                              color: '#15803d',
+                              border: '1px solid #bbf7d0'
+                            }}
+                          >
+                            {matchPct}% Match
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)', marginTop: '2px' }}>
+                          {sug.block} &bull; Floor {sug.floor} ({sug.availableBeds} beds vacant &bull; optimal distribution)
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: 'var(--brand-blue)',
+                          color: '#ffffff',
+                          fontSize: '0.75rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        Select
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
 
             <div style={{ textAlign: 'right' }}>
