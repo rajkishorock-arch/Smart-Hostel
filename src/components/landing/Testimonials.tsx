@@ -1,125 +1,154 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import {
+  User,
+  ShieldCheck,
+  UtensilsCrossed,
+  Quote
+} from 'lucide-react';
 
 export const Testimonials: React.FC = () => {
-  const reviews = [
+  const perspectives = [
     {
-      name: 'Aayush M.',
-      role: 'Student Resident Persona • Block A, Room 204',
-      quote: 'When my room fan had a burning smell, lodging it on the portal triggered the AI classifier to flag it as Electrical Urgent. The warden resolution board immediately picked up the priority ticket.',
-      rating: 5,
-      avatar: 'AM'
+      title: 'Resident Perspective',
+      subtitle: 'Illustrative user perspective',
+      icon: <User size={22} color="#1e3a8a" />,
+      tag: 'Hostel Resident',
+      need: '“When my study room fan stopped working before exams, I used to search for the complaint notebook in the warden office. With Smart Hostel, I lodged it on my phone in 20 seconds. The smart classifier automatically tagged it as Electrical, and I could track when the electrician was on the way.”',
+      highlight: 'Transparent 20-second issue reporting & status tracking',
+      bg: '#eff6ff',
+      border: '#bfdbfe'
     },
     {
-      name: 'Dr. R. Sundaram',
-      role: 'Chief Warden Persona • Administration Desk',
-      quote: 'Managing student blocks used to rely on handwritten chits. The Maintenance Resolution Board gives instant oversight of electrical, plumbing, and carpentry requests with verified resolution notes.',
-      rating: 5,
-      avatar: 'RS'
+      title: 'Warden Perspective',
+      subtitle: 'Illustrative user perspective',
+      icon: <ShieldCheck size={22} color="#059669" />,
+      tag: 'Chief Warden',
+      need: '“Managing multiple hostel blocks used to mean endless phone calls and duplicate complaints. The centralized Maintenance Board groups issues by trade, while room allocation lets us confirm student check-ins and bed vacancies instantly.”',
+      highlight: 'Unified control over rooms, occupancy, and repair tasks',
+      bg: '#ecfdf5',
+      border: '#a7f3d0'
     },
     {
-      name: 'Pooja V.',
-      role: 'Mess Committee Persona • Dining Wing',
-      quote: 'The weekly mess menu editor allows wardens to publish breakfast, lunch, and dinner menus instantly. Residents check timings before arriving, which keeps the dining schedule organized.',
-      rating: 5,
-      avatar: 'PV'
+      title: 'Mess Committee Perspective',
+      subtitle: 'Illustrative user perspective',
+      icon: <UtensilsCrossed size={22} color="#d97706" />,
+      tag: 'Mess Administration',
+      need: '“Publishing weekly meal schedules digitally prevents unnecessary student inquiries at the dining hall entrance. Everyone knows what is being served for Breakfast, Lunch, Snacks, and Dinner along with serving timings.”',
+      highlight: 'Real-time 7-day culinary calendar & meal timings',
+      bg: '#fef3c7',
+      border: '#fde68a'
     }
   ];
 
   return (
-    <section id="testimonials" style={{ padding: '80px 0', background: '#f8fafc', borderBottom: '1px solid var(--border-subtle)' }}>
+    <section id="perspectives" style={{ padding: '80px 0', background: '#f8fafc', borderBottom: '1px solid var(--border-subtle)' }}>
       <div className="container">
         {/* Header */}
-        <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 56px auto' }}>
-          <span
+        <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 52px auto' }}>
+          <div
             style={{
-              fontSize: '0.825rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 12px',
+              borderRadius: '9999px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              color: '#334155',
+              fontSize: '0.8rem',
               fontWeight: 700,
               textTransform: 'uppercase',
-              color: '#4f46e5',
-              letterSpacing: '0.08em'
+              letterSpacing: '0.06em',
+              marginBottom: '12px'
             }}
           >
-            User Experience Personas
-          </span>
+            <span>What Users Need</span>
+          </div>
+
           <h2
             className="font-display"
             style={{
-              fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
+              fontSize: 'clamp(1.85rem, 3.5vw, 2.5rem)',
               fontWeight: 800,
               color: '#0f172a',
-              marginTop: '8px',
-              marginBottom: '16px'
+              marginTop: '4px',
+              marginBottom: '14px'
             }}
           >
-            Role-Based Workflows in Action
+            User Perspectives &amp; Real-World Needs
           </h2>
+
           <p style={{ color: '#64748b', fontSize: '1.05rem', lineHeight: 1.6 }}>
-            Illustrative workflow scenarios demonstrating how residents, wardens, and mess administrators interact with the platform.
+            Illustrative perspectives reflecting the practical pain points addressed for residents, wardens, and mess administrators.
           </p>
         </div>
 
-        {/* Testimonials Grid */}
+        {/* Perspectives Cards Grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '28px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '24px'
           }}
         >
-          {reviews.map((rev, idx) => (
+          {perspectives.map((p, idx) => (
             <div
               key={idx}
-              className="card"
               style={{
-                padding: '32px 28px',
                 background: '#ffffff',
-                border: '1px solid #e2e8f0',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '28px',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                position: 'relative'
+                flexDirection: 'column'
               }}
             >
-              <div>
-                {/* Rating stars */}
-                <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-                  {[...Array(rev.rating)].map((_, i) => (
-                    <Star key={i} size={18} fill="#f59e0b" color="#f59e0b" />
-                  ))}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      background: p.bg,
+                      border: `1px solid ${p.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {p.icon}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                      {p.title}
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {p.subtitle}
+                    </span>
+                  </div>
                 </div>
 
-                <p style={{ fontSize: '0.95rem', color: '#334155', lineHeight: 1.7, fontStyle: 'italic', marginBottom: '24px' }}>
-                  "{rev.quote}"
-                </p>
+                <Quote size={20} color="#cbd5e1" />
               </div>
 
-              {/* Author info */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', borderTop: '1px solid #f1f5f9', paddingTop: '18px' }}>
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: '0.9rem'
-                  }}
-                >
-                  {rev.avatar}
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                    {rev.name}
-                  </h4>
-                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
-                    {rev.role}
-                  </p>
-                </div>
+              <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.65, fontStyle: 'italic', marginBottom: '20px', flexGrow: 1 }}>
+                {p.need}
+              </p>
+
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  fontSize: '0.8rem',
+                  color: '#1e293b',
+                  fontWeight: 600
+                }}
+              >
+                Key Benefit: {p.highlight}
               </div>
             </div>
           ))}

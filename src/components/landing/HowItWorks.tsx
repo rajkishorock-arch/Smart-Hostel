@@ -1,9 +1,9 @@
 import React from 'react';
 import {
   UserCheck,
-  CalendarCheck,
-  Bot,
-  CheckCircle,
+  DoorOpen,
+  Wrench,
+  CheckCircle2,
   ArrowRight
 } from 'lucide-react';
 
@@ -11,27 +11,43 @@ export const HowItWorks: React.FC = () => {
   const steps = [
     {
       step: '01',
-      icon: <UserCheck size={26} color="#4f46e5" />,
-      title: 'Digital Onboarding & Room Allotment',
-      desc: 'Students register with their campus credentials. Wardens allocate Block, Room, and Bed numbers in a unified digital registry, eliminating manual room ledger bottlenecks.'
+      title: 'Check In',
+      desc: 'Residents log in with student credentials. Wardens confirm room allotment and activate digital residential profile.',
+      icon: <UserCheck size={24} color="#1e3a8a" />,
+      tag: 'Onboarding',
+      color: '#1e3a8a',
+      bg: '#eff6ff',
+      border: '#bfdbfe'
     },
     {
       step: '02',
-      icon: <CalendarCheck size={26} color="#10b981" />,
-      title: 'Real-Time Weekly Mess Timetable',
-      desc: 'The chief warden publishes the 7-day culinary timetable for Breakfast, Lunch, High Tea, and Dinner. Residents immediately view menus, timings, and dietary notes on their portal.'
+      title: 'View Room & Meals',
+      desc: 'Access your assigned Block, Room, and Bed. Check today’s 4 daily meals and weekly rotating dining menu in real time.',
+      icon: <DoorOpen size={24} color="#059669" />,
+      tag: 'Hostel & Mess',
+      color: '#059669',
+      bg: '#ecfdf5',
+      border: '#a7f3d0'
     },
     {
       step: '03',
-      icon: <Bot size={26} color="#f59e0b" />,
-      title: 'AI-Powered Maintenance Logging',
-      desc: 'When an issue occurs (such as a sparking socket or clogged sink), the resident types the problem. Our built-in AI classifies it into Electrical, Plumbing, or Carpentry with urgency rating.'
+      title: 'Lodge Issue',
+      desc: 'Report electrical, plumbing, or carpentry faults. Built-in smart classification automatically tags trade and urgency.',
+      icon: <Wrench size={24} color="#d97706" />,
+      tag: 'Maintenance',
+      color: '#d97706',
+      bg: '#fef3c7',
+      border: '#fde68a'
     },
     {
       step: '04',
-      icon: <CheckCircle size={26} color="#06b6d4" />,
-      title: 'Warden Resolution & Real-Time Sync',
-      desc: 'The Warden reviews tickets on their Resolution Board, assigns electricians or carpenters, and updates status from Open to In Progress to Resolved with completion notes.'
+      title: 'Track Resolution',
+      desc: 'Follow your ticket live from Open → In Progress → Resolved. Wardens assign campus technicians with verified completion notes.',
+      icon: <CheckCircle2 size={24} color="#2563eb" />,
+      tag: 'Complete Care',
+      color: '#2563eb',
+      bg: '#eff6ff',
+      border: '#bfdbfe'
     }
   ];
 
@@ -39,101 +55,114 @@ export const HowItWorks: React.FC = () => {
     <section id="how-it-works" style={{ padding: '80px 0', background: '#ffffff', borderBottom: '1px solid var(--border-subtle)' }}>
       <div className="container">
         {/* Section Header */}
-        <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 56px auto' }}>
-          <span
+        <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 48px auto' }}>
+          <div
             style={{
-              fontSize: '0.825rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 12px',
+              borderRadius: '9999px',
+              background: '#f1f5f9',
+              border: '1px solid #e2e8f0',
+              color: '#334155',
+              fontSize: '0.8rem',
               fontWeight: 700,
               textTransform: 'uppercase',
-              color: '#4f46e5',
-              letterSpacing: '0.08em'
+              letterSpacing: '0.06em',
+              marginBottom: '12px'
             }}
           >
-            System Architecture
-          </span>
+            <span>Workflow Architecture</span>
+          </div>
+
           <h2
             className="font-display"
             style={{
-              fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
+              fontSize: 'clamp(1.85rem, 3.5vw, 2.5rem)',
               fontWeight: 800,
               color: '#0f172a',
-              marginTop: '8px',
-              marginBottom: '16px'
+              marginTop: '4px',
+              marginBottom: '14px'
             }}
           >
             How Smart Hostel Operates
           </h2>
           <p style={{ color: '#64748b', fontSize: '1.05rem', lineHeight: 1.6 }}>
-            Designed specifically for university halls of residence to bridge communication gaps
-            between student residents and administrative wardens.
+            A streamlined 4-step residential journey connecting students, wardens, and mess administrators.
           </p>
         </div>
 
-        {/* Steps Grid */}
+        {/* 4-Step Cards Grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '32px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '24px',
             position: 'relative'
           }}
         >
           {steps.map((item, idx) => (
             <div
               key={idx}
-              className="card"
               style={{
-                padding: '32px 24px',
-                position: 'relative',
+                background: '#ffffff',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
                 flexDirection: 'column',
-                borderRadius: '16px',
-                background: '#f8fafc',
-                border: '1.5px solid #e2e8f0',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                position: 'relative'
               }}
             >
-              {/* Step indicator */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '20px'
-                }}
-              >
-                <div
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '14px',
-                    background: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: 'var(--shadow-sm)',
-                    border: '1px solid #e2e8f0'
-                  }}
-                >
-                  {item.icon}
-                </div>
+              {/* Step indicator header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <span
-                  className="font-display"
                   style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 800,
-                    color: '#cbd5e1'
+                    fontSize: '1.25rem',
+                    fontWeight: 900,
+                    fontFamily: 'monospace',
+                    color: item.color
                   }}
                 >
                   {item.step}
                 </span>
+
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: item.bg,
+                    border: `1px solid ${item.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {item.icon}
+                </div>
               </div>
 
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
+              <div
+                style={{
+                  display: 'inline-block',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  color: item.color,
+                  marginBottom: '6px'
+                }}
+              >
+                {item.tag}
+              </div>
+
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '10px' }}>
                 {item.title}
               </h3>
 
-              <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.6, flexGrow: 1 }}>
+              <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.6, margin: 0, flexGrow: 1 }}>
                 {item.desc}
               </p>
             </div>

@@ -1,52 +1,64 @@
 import React from 'react';
 import {
-  Building,
+  DoorOpen,
   UtensilsCrossed,
-  Sparkles,
-  ClipboardList,
-  Shield,
+  Wrench,
   Clock,
-  CheckCircle2,
-  Users
+  ShieldCheck,
+  Cpu,
+  ArrowRight
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Features: React.FC = () => {
   const features = [
     {
-      icon: <Building size={24} color="#4f46e5" />,
-      tag: 'Hostel & Bed Registry',
-      title: 'Digital Room & Bed Allocation',
-      desc: 'Map every student to their specific Hostel, Block, Room, and Bed. Track live occupancy percentages, available beds, and roommate details without physical rosters.'
+      icon: <DoorOpen size={24} color="#1e3a8a" />,
+      tag: 'Hostel Module',
+      title: 'Room Allocation',
+      desc: 'View assigned room, block, and bed slot with clear occupancy status. Wardens maintain a live roster without physical room registers.',
+      bg: '#eff6ff',
+      border: '#bfdbfe'
     },
     {
-      icon: <UtensilsCrossed size={24} color="#10b981" />,
-      tag: 'Nutritious Dining',
-      title: 'Live Weekly Mess Timetable',
-      desc: 'Full 7-day culinary calendar updated by the Warden. Students can view Breakfast, Lunch, High Tea, and Dinner menus along with serving timings and special dietary announcements.'
+      icon: <UtensilsCrossed size={24} color="#059669" />,
+      tag: 'Mess Module',
+      title: 'Smart Mess Menu',
+      desc: 'Today’s 4 active meals (Breakfast, Lunch, High Tea, Dinner) and full weekly schedule. Instant updates when menu changes occur.',
+      bg: '#ecfdf5',
+      border: '#a7f3d0'
     },
     {
-      icon: <Sparkles size={24} color="#f59e0b" />,
-      tag: 'AI Assistance',
-      title: 'Automatic Ticket Classification',
-      desc: 'Contextual AI NLP scans resident problem descriptions. It detects trades (Electrical, Plumbing, Carpentry) and evaluates urgency levels automatically to eliminate routing delays.'
+      icon: <Wrench size={24} color="#d97706" />,
+      tag: 'Maintenance Module',
+      title: 'Maintenance Tickets',
+      desc: 'Report electrical, plumbing, and carpentry issues easily from your phone. Each ticket is automatically bound to your assigned room.',
+      bg: '#fef3c7',
+      border: '#fde68a'
     },
     {
-      icon: <ClipboardList size={24} color="#ec4899" />,
-      tag: 'Full Transparency',
-      title: 'Real-Time Maintenance Lifecycle',
-      desc: 'Residents track their ticket status from Open to In Progress to Resolved in real time. Wardens attach technician notes and completion timestamps directly.'
+      icon: <Clock size={24} color="#2563eb" />,
+      tag: 'Transparency',
+      title: 'Live Ticket Tracking',
+      desc: 'Follow ticket status from Open → In Progress → Resolved in real time. Wardens attach resolution notes and completion details.',
+      bg: '#eff6ff',
+      border: '#bfdbfe'
     },
     {
-      icon: <Shield size={24} color="#6366f1" />,
-      tag: 'Campus Security',
-      title: 'Strict Role-Based Authorization',
-      desc: 'Hardened Firestore rules and client route protection ensure residents only access their own room data and tickets, while wardens maintain full administrative authority.'
+      icon: <ShieldCheck size={24} color="#1e3a8a" />,
+      tag: 'Operations',
+      title: 'Warden Management',
+      desc: 'Centralized console to manage residents, rooms, meals, and maintenance. Single-click status transitions and room assignments.',
+      bg: '#eff6ff',
+      border: '#bfdbfe'
     },
     {
-      icon: <Clock size={24} color="#06b6d4" />,
-      tag: 'Efficiency',
-      title: 'Rapid Warden Resolution Desk',
-      desc: 'Warden control room with aggregated metrics, one-click status transitions, room reassignment tools, and immediate resident notifications.'
+      icon: <Cpu size={24} color="#b45309" />,
+      tag: 'Smart Classification',
+      title: 'AI Issue Classification',
+      desc: 'Automatically suggests maintenance category (Electrical, Plumbing, Carpentry) and priority based on problem description.',
+      bg: '#fef3c7',
+      border: '#fde68a'
     }
   ];
 
@@ -54,33 +66,41 @@ export const Features: React.FC = () => {
     <section id="features" style={{ padding: '80px 0', background: '#f8fafc', borderBottom: '1px solid var(--border-subtle)' }}>
       <div className="container">
         {/* Header */}
-        <div style={{ textAlign: 'center', maxWidth: '760px', margin: '0 auto 56px auto' }}>
-          <span
+        <div style={{ textAlign: 'center', maxWidth: '760px', margin: '0 auto 52px auto' }}>
+          <div
             style={{
-              fontSize: '0.825rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 12px',
+              borderRadius: '9999px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              color: '#334155',
+              fontSize: '0.8rem',
               fontWeight: 700,
               textTransform: 'uppercase',
-              color: '#4f46e5',
-              letterSpacing: '0.08em'
+              letterSpacing: '0.06em',
+              marginBottom: '12px'
             }}
           >
-            Core Capabilities
-          </span>
+            <span>Core Capabilities</span>
+          </div>
+
           <h2
             className="font-display"
             style={{
-              fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
+              fontSize: 'clamp(1.85rem, 3.5vw, 2.5rem)',
               fontWeight: 800,
               color: '#0f172a',
-              marginTop: '8px',
-              marginBottom: '16px'
+              marginTop: '4px',
+              marginBottom: '14px'
             }}
           >
-            Purpose-Built for Campus Residence Life
+            Purpose-Built for Hostel &amp; Mess Life
           </h2>
           <p style={{ color: '#64748b', fontSize: '1.05rem', lineHeight: 1.6 }}>
-            Every module addresses concrete operational problems faced by hostel wardens,
-            mess committees, and student residents every day.
+            Every capability directly addresses daily operations for hostel residents and wardens.
           </p>
         </div>
 
@@ -95,23 +115,24 @@ export const Features: React.FC = () => {
           {features.map((f, i) => (
             <div
               key={i}
-              className="card"
               style={{
-                padding: '28px',
                 background: '#ffffff',
-                border: '1px solid #e2e8f0',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '14px'
+                flexDirection: 'column'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <div
                   style={{
-                    width: '46px',
-                    height: '46px',
-                    borderRadius: '12px',
-                    background: '#f1f5f9',
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    background: f.bg,
+                    border: `1px solid ${f.border}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -121,25 +142,24 @@ export const Features: React.FC = () => {
                 </div>
                 <span
                   style={{
-                    fontSize: '0.725rem',
+                    fontSize: '0.72rem',
                     fontWeight: 700,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
+                    color: '#64748b',
+                    background: '#f8fafc',
                     padding: '3px 8px',
-                    borderRadius: '6px',
-                    background: '#eef2ff',
-                    color: '#4338ca'
+                    borderRadius: '6px'
                   }}
                 >
                   {f.tag}
                 </span>
               </div>
 
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
                 {f.title}
               </h3>
 
-              <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+              <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.6, margin: 0 }}>
                 {f.desc}
               </p>
             </div>

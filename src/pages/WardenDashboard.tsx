@@ -15,12 +15,12 @@ import { RoomAllocationManager } from '../components/warden/RoomAllocationManage
 import { MessMenuEditor } from '../components/warden/MessMenuEditor';
 import {
   ShieldCheck,
-  Wrench,
-  Users,
   Building2,
   UtensilsCrossed,
+  Wrench,
   CheckCircle,
-  Bell
+  Users,
+  DoorOpen
 } from 'lucide-react';
 
 export const WardenDashboard: React.FC = () => {
@@ -28,7 +28,7 @@ export const WardenDashboard: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [rooms, setRooms] = useState<RoomRecord[]>([]);
   const [residents, setResidents] = useState<UserProfile[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'maintenance' | 'residents' | 'rooms' | 'mess'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'hostel' | 'mess' | 'maintenance'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export const WardenDashboard: React.FC = () => {
       unsubTickets();
       unsubRooms();
     };
-  }, []);
+  }, [user]);
 
   const refreshData = () => {
     const usersObj = getStoredUsers();
@@ -75,17 +75,17 @@ export const WardenDashboard: React.FC = () => {
           style={{
             position: 'fixed',
             top: '84px',
-            right: '24px',
+            right: '20px',
             zIndex: 90,
             background: '#065f46',
             color: '#ffffff',
-            padding: '12px 20px',
-            borderRadius: '12px',
+            padding: '12px 18px',
+            borderRadius: '10px',
             boxShadow: 'var(--shadow-lg)',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            fontSize: '0.9rem',
+            fontSize: '0.88rem',
             fontWeight: 600,
             animation: 'fadeIn 0.2s ease-out'
           }}
@@ -95,28 +95,33 @@ export const WardenDashboard: React.FC = () => {
         </div>
       )}
 
-      <main style={{ flexGrow: 1, padding: '36px 0 64px 0' }}>
+      <main style={{ flexGrow: 1, padding: '32px 0 64px 0' }}>
         <div className="container">
           {/* Top Warden Banner */}
           <div
             style={{
+              background: '#ffffff',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '24px',
+              marginBottom: '28px',
+              boxShadow: 'var(--shadow-xs)',
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '16px',
-              marginBottom: '28px'
+              gap: '16px'
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <span
                   style={{
                     fontSize: '0.75rem',
                     fontWeight: 800,
-                    color: '#4338ca',
-                    background: '#e0e7ff',
-                    padding: '2px 8px',
+                    color: '#1e3a8a',
+                    background: '#eff6ff',
+                    padding: '3px 8px',
                     borderRadius: '6px',
                     textTransform: 'uppercase',
                     display: 'flex',
@@ -130,96 +135,202 @@ export const WardenDashboard: React.FC = () => {
                   {user?.hostel || 'Aravali Hostel'} • Full Authority
                 </span>
               </div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Administration Desk: {user?.name || 'Chief Warden'}
+              <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Operations Desk: {user?.name || 'Chief Warden'}
               </h1>
             </div>
 
-            {/* Quick Section Tabs */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
+            {/* Quick Domain Filter Tabs */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', background: '#f1f5f9', padding: '4px', borderRadius: '10px' }}>
               <button
                 onClick={() => setActiveTab('all')}
                 style={{
-                  padding: '8px 14px',
+                  padding: '7px 14px',
                   borderRadius: '8px',
                   fontSize: '0.825rem',
                   fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
                   background: activeTab === 'all' ? '#ffffff' : 'transparent',
                   color: activeTab === 'all' ? '#0f172a' : '#64748b',
-                  boxShadow: activeTab === 'all' ? 'var(--shadow-sm)' : 'none'
+                  boxShadow: activeTab === 'all' ? 'var(--shadow-xs)' : 'none'
                 }}
               >
-                All Sections
+                All Operations
               </button>
               <button
-                onClick={() => setActiveTab('maintenance')}
+                onClick={() => setActiveTab('hostel')}
                 style={{
-                  padding: '8px 14px',
+                  padding: '7px 14px',
                   borderRadius: '8px',
                   fontSize: '0.825rem',
                   fontWeight: 700,
-                  background: activeTab === 'maintenance' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'maintenance' ? '#4f46e5' : '#64748b',
-                  boxShadow: activeTab === 'maintenance' ? 'var(--shadow-sm)' : 'none'
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: activeTab === 'hostel' ? '#ffffff' : 'transparent',
+                  color: activeTab === 'hostel' ? '#1e3a8a' : '#64748b',
+                  boxShadow: activeTab === 'hostel' ? 'var(--shadow-xs)' : 'none'
                 }}
               >
-                1. Maintenance
-              </button>
-              <button
-                onClick={() => setActiveTab('residents')}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  fontSize: '0.825rem',
-                  fontWeight: 700,
-                  background: activeTab === 'residents' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'residents' ? '#4f46e5' : '#64748b',
-                  boxShadow: activeTab === 'residents' ? 'var(--shadow-sm)' : 'none'
-                }}
-              >
-                2. Residents
-              </button>
-              <button
-                onClick={() => setActiveTab('rooms')}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  fontSize: '0.825rem',
-                  fontWeight: 700,
-                  background: activeTab === 'rooms' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'rooms' ? '#0891b2' : '#64748b',
-                  boxShadow: activeTab === 'rooms' ? 'var(--shadow-sm)' : 'none'
-                }}
-              >
-                3. Rooms
+                1. Hostel Operations
               </button>
               <button
                 onClick={() => setActiveTab('mess')}
                 style={{
-                  padding: '8px 14px',
+                  padding: '7px 14px',
                   borderRadius: '8px',
                   fontSize: '0.825rem',
                   fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
                   background: activeTab === 'mess' ? '#ffffff' : 'transparent',
                   color: activeTab === 'mess' ? '#059669' : '#64748b',
-                  boxShadow: activeTab === 'mess' ? 'var(--shadow-sm)' : 'none'
+                  boxShadow: activeTab === 'mess' ? 'var(--shadow-xs)' : 'none'
                 }}
               >
-                4. Mess Menu
+                2. Smart Mess Operations
+              </button>
+              <button
+                onClick={() => setActiveTab('maintenance')}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  fontSize: '0.825rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: activeTab === 'maintenance' ? '#ffffff' : 'transparent',
+                  color: activeTab === 'maintenance' ? '#d97706' : '#64748b',
+                  boxShadow: activeTab === 'maintenance' ? 'var(--shadow-xs)' : 'none'
+                }}
+              >
+                3. Maintenance Operations
               </button>
             </div>
           </div>
 
-          {/* Metrics Overview (Total Residents, Occupancy, Open, In Progress, Resolved) */}
-          <MetricsOverview
-            tickets={tickets}
-            rooms={rooms}
-            residents={residents}
-          />
+          {/* Operational Metrics Bar */}
+          <div style={{ marginBottom: '32px' }}>
+            <MetricsOverview
+              tickets={tickets}
+              rooms={rooms}
+              residents={residents}
+            />
+          </div>
 
-          {/* Module 1: Maintenance Resolution Board */}
+          {/* ============================================================ */}
+          {/* DOMAIN 1: HOSTEL OPERATIONS (Residents, Rooms, Allocations)  */}
+          {/* ============================================================ */}
+          {(activeTab === 'all' || activeTab === 'hostel') && (
+            <div style={{ marginBottom: '40px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#1e3a8a'
+                  }}
+                >
+                  <Building2 size={18} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Hostel Operations
+                  </h2>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    Resident directory, bed allocations, and block occupancy
+                  </span>
+                </div>
+              </div>
+
+              {/* Room Allocation Manager */}
+              <div style={{ marginBottom: '24px' }}>
+                <RoomAllocationManager
+                  rooms={rooms}
+                  residents={residents}
+                  onRoomsUpdated={refreshData}
+                />
+              </div>
+
+              {/* Resident Management */}
+              <div>
+                <ResidentManagement residents={residents} />
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* DOMAIN 2: SMART MESS OPERATIONS (Weekly Menu, Serving Times)  */}
+          {/* ============================================================ */}
+          {(activeTab === 'all' || activeTab === 'mess') && (
+            <div style={{ marginBottom: '40px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#059669'
+                  }}
+                >
+                  <UtensilsCrossed size={18} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Smart Mess Operations
+                  </h2>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    Publish 7-day culinary timetable and daily meal menus
+                  </span>
+                </div>
+              </div>
+
+              <MessMenuEditor />
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* DOMAIN 3: MAINTENANCE OPERATIONS (Maintenance Board & Status) */}
+          {/* ============================================================ */}
           {(activeTab === 'all' || activeTab === 'maintenance') && (
             <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: '#fef3c7',
+                    border: '1px solid #fde68a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#b45309'
+                  }}
+                >
+                  <Wrench size={18} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Maintenance Operations
+                  </h2>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    Review smart classified complaints, assign contractors, and mark resolved
+                  </span>
+                </div>
+              </div>
+
               <MaintenanceBoard
                 tickets={tickets}
                 onStatusUpdated={() => {
@@ -227,31 +338,6 @@ export const WardenDashboard: React.FC = () => {
                   setTimeout(() => setToastMessage(null), 4000);
                 }}
               />
-            </div>
-          )}
-
-          {/* Module 2: Resident Management */}
-          {(activeTab === 'all' || activeTab === 'residents') && (
-            <div style={{ marginBottom: '32px' }}>
-              <ResidentManagement residents={residents} />
-            </div>
-          )}
-
-          {/* Module 3: Room Allocation Manager */}
-          {(activeTab === 'all' || activeTab === 'rooms') && (
-            <div style={{ marginBottom: '32px' }}>
-              <RoomAllocationManager
-                rooms={rooms}
-                residents={residents}
-                onRoomsUpdated={refreshData}
-              />
-            </div>
-          )}
-
-          {/* Module 4: Weekly Mess Menu Editor */}
-          {(activeTab === 'all' || activeTab === 'mess') && (
-            <div style={{ marginBottom: '32px' }}>
-              <MessMenuEditor />
             </div>
           )}
         </div>

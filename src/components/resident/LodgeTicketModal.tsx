@@ -278,40 +278,41 @@ export const LodgeTicketModal: React.FC<LodgeTicketModalProps> = ({
           {/* AI Detection Banner */}
           {aiResult && description.trim().length > 3 && (
             <div className="ai-pulse-box animate-fade-in" style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={18} color="#7c3aed" />
-                  <span style={{ fontWeight: 800, color: '#5b21b6', fontSize: '0.875rem' }}>
-                    AI Classification Engine: {aiResult.category}
+                  <Sparkles size={18} color="#d97706" />
+                  <span style={{ fontWeight: 800, color: '#92400e', fontSize: '0.875rem' }}>
+                    Smart Trade Suggestion: {aiResult.category}
                   </span>
                 </div>
                 <span
                   style={{
-                    background: '#7c3aed',
-                    color: '#ffffff',
+                    background: '#fef3c7',
+                    color: '#92400e',
+                    border: '1px solid #fde68a',
                     padding: '2px 8px',
                     borderRadius: '9999px',
                     fontSize: '0.72rem',
                     fontWeight: 700
                   }}
                 >
-                  {aiResult.confidence}% Confidence
+                  {aiResult.confidence}% Pattern Match
                 </span>
               </div>
-              <p style={{ fontSize: '0.825rem', color: '#4c1d95', margin: 0, lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.825rem', color: '#78350f', margin: 0, lineHeight: 1.5 }}>
                 {aiResult.reasoning}
               </p>
             </div>
           )}
 
           {/* Category & Priority Selectors */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
             <div>
               <label className="form-label">
                 Assigned Category
                 {aiResult && category === aiResult.category && (
-                  <span style={{ color: '#7c3aed', marginLeft: '6px', fontSize: '0.75rem' }}>
-                    (AI Verified)
+                  <span style={{ color: '#d97706', marginLeft: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+                    (Smart Suggested)
                   </span>
                 )}
               </label>
