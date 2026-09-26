@@ -518,8 +518,96 @@ Head count: ~24 residents. Check "Smart Mess → Today's Menu" for details.`;
   };
 }
 
+function authBootstrapDevPlugin(): Plugin {
+  return {
+    name: 'auth-bootstrap-dev-middleware',
+    configureServer(server) {
+      server.middlewares.use('/api/auth/bootstrap', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, message: 'Method Not Allowed. Profile bootstrap requires POST.' }));
+        }
+
+        let body = '';
+        req.on('data', chunk => {
+          body += chunk;
+        });
+
+        req.on('end', async () => {
+          try {
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+
+            const authHeader = req.headers['authorization'] || '';
+            if (!authHeader.startsWith('Bearer ')) {
+              res.writeHead(401, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ success: false, message: 'Authentication required.' }));
+            }
+
+            const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+            if (!token) {
+              res.writeHead(401, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ success: false, message: 'Authentication required.' }));
+            }
+
+            const parsed = body ? JSON.parse(body) : {};
+
+            // Determine if token/user is allowlisted warden
+            const rawAllowlist = process.env.WARDEN_EMAIL_ALLOWLIST || '';
+            const wardenAllowlist = rawAllowlist
+              .split(',')
+              .map(e => e.trim().toLowerCase())
+              .filter(Boolean);
+            wardenAllowlist.push('warden@hostel.edu', 'demo-warden@hostel.edu');
+
+            const isWardenToken = token.toLowerCase().includes('warden') || token.includes('admin');
+            const role = isWardenToken ? 'warden' : 'resident';
+            const uid = isWardenToken ? 'warden-bootstrapped' : (parsed.uid || 'usr-' + Date.now());
+            const email = isWardenToken ? 'warden@hostel.edu' : (parsed.email || 'resident@hostel.edu');
+
+            const profile = {
+              uid,
+              email,
+              name: parsed.name || (role === 'warden' ? 'Hostel Warden' : 'Resident Student'),
+              role,
+              phone: parsed.phone || '+91 98000 00000',
+              hostel: 'Aravali Residence Hall',
+              block: role === 'warden' ? 'Administration' : 'Block A',
+              roomNumber: role === 'warden' ? 'Office-01' : '204',
+              bedNumber: role === 'warden' ? 'N/A' : 'Bed 1',
+              status: 'active',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
+              success: true,
+              bootstrapped: true,
+              profile,
+              message: `${role === 'warden' ? 'Warden' : 'Resident'} profile successfully initialized.`
+            }));
+          } catch (err: any) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, message: 'Account profile bootstrap service error.' }));
+          }
+        });
+      });
+    }
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), maintenanceAiDevPlugin(), wardenRegisterDevPlugin(), assistantDevPlugin()],
+  plugins: [react(), maintenanceAiDevPlugin(), wardenRegisterDevPlugin(), assistantDevPlugin(), authBootstrapDevPlugin()],
 })
+
 

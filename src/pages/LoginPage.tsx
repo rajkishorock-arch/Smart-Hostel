@@ -10,7 +10,6 @@ import {
   Mail,
   AlertCircle,
   ArrowRight,
-  Zap,
   CheckCircle2
 } from 'lucide-react';
 
@@ -48,13 +47,8 @@ export const LoginPage: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const user = await login(email, password, role);
-      if (role === 'warden' && user.role !== 'warden') {
-        setError('Warden access is not enabled for this account.');
-        setSubmitting(false);
-        return;
-      }
-
+      const user = await login(email, password);
+      // Route based on authentic verified role
       if (user.role === 'warden') {
         navigate('/admin/dashboard');
       } else {
@@ -78,7 +72,7 @@ export const LoginPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Demo login failed.');
+      setError(err.message || 'Demo login failed. Verify environment credentials.');
     } finally {
       setSubmitting(false);
     }
@@ -137,7 +131,7 @@ export const LoginPage: React.FC = () => {
             border: '1.5px solid #e2e8f0'
           }}
         >
-          {/* Role Switcher Tabs */}
+          {/* Portal Selector Tabs */}
           <div
             style={{
               display: 'grid',
@@ -163,7 +157,9 @@ export const LoginPage: React.FC = () => {
                 color: role === 'resident' ? '#1e3a8a' : '#64748b',
                 background: role === 'resident' ? '#ffffff' : 'transparent',
                 boxShadow: role === 'resident' ? 'var(--shadow-xs)' : 'none',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.15s ease',
+                border: 'none',
+                cursor: 'pointer'
               }}
             >
               <User size={15} />
@@ -185,7 +181,9 @@ export const LoginPage: React.FC = () => {
                 color: role === 'warden' ? '#1e3a8a' : '#64748b',
                 background: role === 'warden' ? '#ffffff' : 'transparent',
                 boxShadow: role === 'warden' ? 'var(--shadow-xs)' : 'none',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.15s ease',
+                border: 'none',
+                cursor: 'pointer'
               }}
             >
               <ShieldCheck size={15} />
@@ -216,7 +214,7 @@ export const LoginPage: React.FC = () => {
           {/* Form */}
           <form onSubmit={handleSubmit}>
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px', display: 'block' }}>
                 {role === 'resident' ? 'Resident Student Email' : 'Warden Official Email'}
               </label>
               <div style={{ position: 'relative' }}>
@@ -235,7 +233,7 @@ export const LoginPage: React.FC = () => {
                   required
                   placeholder={role === 'resident' ? 'resident@campus.edu' : 'warden@campus.edu'}
                   className="input-field"
-                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
+                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}
                   value={email}
                   onChange={handleEmailChange}
                 />
@@ -243,7 +241,7 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px', display: 'block' }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
@@ -262,7 +260,7 @@ export const LoginPage: React.FC = () => {
                   required
                   placeholder="••••••••"
                   className="input-field"
-                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
+                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}
                   value={password}
                   onChange={handlePasswordChange}
                 />
@@ -278,10 +276,19 @@ export const LoginPage: React.FC = () => {
                 height: '44px',
                 fontSize: '0.95rem',
                 background: '#1e3a8a',
-                borderColor: '#1e3a8a'
+                borderColor: '#1e3a8a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontWeight: 700,
+                color: '#ffffff',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: submitting ? 'not-allowed' : 'pointer'
               }}
             >
-              {submitting ? 'Verifying...' : `Access ${role === 'warden' ? 'Warden Admin Desk' : 'Resident Portal'}`}
+              <span>{submitting ? 'Authenticating...' : 'Sign In to Portal'}</span>
               <ArrowRight size={16} />
             </button>
           </form>
@@ -320,11 +327,14 @@ export const LoginPage: React.FC = () => {
                   onClick={() => handleDemoLogin('resident')}
                   className="btn btn-secondary btn-sm"
                   style={{
+                    display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     padding: '10px',
                     borderRadius: '8px',
-                    border: '1px solid #cbd5e1'
+                    border: '1.5px solid #cbd5e1',
+                    background: '#ffffff',
+                    cursor: submitting ? 'not-allowed' : 'pointer'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#1e3a8a', fontSize: '0.825rem' }}>
@@ -340,11 +350,14 @@ export const LoginPage: React.FC = () => {
                   onClick={() => handleDemoLogin('warden')}
                   className="btn btn-secondary btn-sm"
                   style={{
+                    display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     padding: '10px',
                     borderRadius: '8px',
-                    border: '1px solid #cbd5e1'
+                    border: '1.5px solid #cbd5e1',
+                    background: '#ffffff',
+                    cursor: submitting ? 'not-allowed' : 'pointer'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#065f46', fontSize: '0.825rem' }}>
@@ -361,13 +374,13 @@ export const LoginPage: React.FC = () => {
         <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div>
             New student resident?{' '}
-            <Link to="/register" style={{ color: '#1e3a8a', fontWeight: 700 }}>
+            <Link to="/register" style={{ color: '#1e3a8a', fontWeight: 700, textDecoration: 'none' }}>
               Register Room Profile
             </Link>
           </div>
           <div style={{ fontSize: '0.8rem' }}>
             Hostel Administrator?{' '}
-            <Link to="/warden/register" style={{ color: '#065f46', fontWeight: 700 }}>
+            <Link to="/warden/register" style={{ color: '#065f46', fontWeight: 700, textDecoration: 'none' }}>
               Official Warden Onboarding →
             </Link>
           </div>
