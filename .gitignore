@@ -6,11 +6,29 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+firebase-debug.log*
+firestore-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 dist-ssr
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.local
+serviceAccountKey*.json
+credentials*.json
+
+# Allow example env
+!.env.example
 
 # Editor directories and files
 .vscode/*
