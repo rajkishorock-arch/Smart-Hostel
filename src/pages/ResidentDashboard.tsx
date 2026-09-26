@@ -18,12 +18,24 @@ import {
   UserCheck
 } from 'lucide-react';
 
+import { useLocation } from 'react-router-dom';
+
 export const ResidentDashboard: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [rooms, setRooms] = useState<RoomRecord[]>([]);
   const [isLodgeModalOpen, setIsLodgeModalOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(() => {
+    return (location.state as any)?.error || null;
+  });
+
+  useEffect(() => {
+    if ((location.state as any)?.error) {
+      const timer = setTimeout(() => setToastMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (!user) return;

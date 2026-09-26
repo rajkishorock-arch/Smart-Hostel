@@ -2,7 +2,6 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
-import { ShieldAlert } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,10 +14,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-600 font-medium text-sm">Authenticating secure session...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '36px', height: '36px', border: '3px solid #2563eb', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <p style={{ color: '#64748b', fontWeight: 600, fontSize: '0.875rem' }}>Authenticating session...</p>
         </div>
       </div>
     );
@@ -29,11 +28,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
   }
 
   if (allowedRole && user.role !== allowedRole) {
-    // Role mismatch: redirect to their respective dashboard
-    if (user.role === 'warden') {
-      return <Navigate to="/admin/dashboard" replace />;
+    if (allowedRole === 'warden' && user.role !== 'warden') {
+      // Resident attempting to access warden console: block and redirect to resident station with security notice
+      return (
+        <Navigate
+          to="/dashboard"
+          state={{ error: 'Warden access is not enabled for this account.' }}
+          replace
+        />
+      );
     } else {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/admin/dashboard" replace />;
     }
   }
 

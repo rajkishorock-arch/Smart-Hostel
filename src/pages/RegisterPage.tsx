@@ -82,7 +82,7 @@ export const RegisterPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
+        background: '#f8fafc',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -95,27 +95,27 @@ export const RegisterPage: React.FC = () => {
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
             <div
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: '#1e3a8a',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)'
+                boxShadow: '0 2px 6px rgba(30, 58, 138, 0.2)'
               }}
             >
-              <Building2 size={24} />
+              <Building2 size={22} />
             </div>
-            <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
-              Smart<span style={{ color: '#4f46e5' }}>Hostel</span>
+            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
+              Smart<span style={{ color: '#2563eb' }}>Hostel</span> &amp; Mess
             </span>
           </Link>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
             Resident Student Registration
           </h1>
-          <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '4px' }}>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
             Register your resident profile for room inventory, dining, and rapid maintenance
           </p>
         </div>
@@ -126,8 +126,8 @@ export const RegisterPage: React.FC = () => {
           style={{
             padding: '32px',
             background: '#ffffff',
-            borderRadius: '20px',
-            boxShadow: 'var(--shadow-lg)',
+            borderRadius: '16px',
+            boxShadow: 'var(--shadow-md)',
             border: '1.5px solid #e2e8f0'
           }}
         >
@@ -139,10 +139,11 @@ export const RegisterPage: React.FC = () => {
               justifyContent: 'center',
               gap: '8px',
               padding: '8px 12px',
-              borderRadius: '10px',
-              background: '#eef2ff',
-              color: '#3730a3',
-              fontSize: '0.825rem',
+              borderRadius: '8px',
+              background: '#eff6ff',
+              color: '#1e3a8a',
+              border: '1px solid #bfdbfe',
+              fontSize: '0.8rem',
               fontWeight: 700,
               marginBottom: '20px'
             }}
@@ -181,7 +182,7 @@ export const RegisterPage: React.FC = () => {
                 placeholder="e.g. Aarav Sharma"
                 className="form-input"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={e => { setName(e.target.value); if (error) setError(null); }}
               />
             </div>
 
@@ -195,7 +196,7 @@ export const RegisterPage: React.FC = () => {
                   placeholder="student@campus.edu"
                   className="form-input"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => { setEmail(e.target.value); if (error) setError(null); }}
                 />
               </div>
 
@@ -208,7 +209,7 @@ export const RegisterPage: React.FC = () => {
                   placeholder="+91 98765 43210"
                   className="form-input"
                   value={phone}
-                  onChange={e => setPhone(e.target.value)}
+                  onChange={e => { setPhone(e.target.value); if (error) setError(null); }}
                 />
               </div>
             </div>
@@ -223,7 +224,7 @@ export const RegisterPage: React.FC = () => {
                 placeholder="Minimum 6 characters"
                 className="form-input"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={e => { setPassword(e.target.value); if (error) setError(null); }}
               />
             </div>
 

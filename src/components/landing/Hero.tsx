@@ -105,7 +105,7 @@ export const Hero: React.FC = () => {
           >
             {isAuthenticated ? (
               <Link
-                to={isWarden ? '/warden' : '/resident'}
+                to={isWarden ? '/admin/dashboard' : '/dashboard'}
                 className="btn btn-primary btn-lg"
                 style={{ background: '#1e3a8a', borderColor: '#1e3a8a' }}
               >
@@ -136,6 +136,7 @@ export const Hero: React.FC = () => {
             {/* Quick Demo Access Buttons for Evaluators */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
+                id="hero-demo-resident-btn"
                 onClick={() => quickDemoLogin('resident')}
                 className="btn btn-outline"
                 style={{
@@ -151,6 +152,7 @@ export const Hero: React.FC = () => {
                 <span>Demo Resident</span>
               </button>
               <button
+                id="hero-demo-warden-btn"
                 onClick={() => quickDemoLogin('warden')}
                 className="btn btn-outline"
                 style={{

@@ -10,8 +10,8 @@ import {
   Mail,
   AlertCircle,
   ArrowRight,
-  Sparkles,
-  Zap
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -27,6 +27,21 @@ export const LoginPage: React.FC = () => {
   const { login, quickDemoLogin } = useAuth();
   const navigate = useNavigate();
 
+  const handleRoleChange = (newRole: UserRole) => {
+    setRole(newRole);
+    setError(null);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (error) setError(null);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -34,6 +49,12 @@ export const LoginPage: React.FC = () => {
 
     try {
       const user = await login(email, password, role);
+      if (role === 'warden' && user.role !== 'warden') {
+        setError('Warden access is not enabled for this account.');
+        setSubmitting(false);
+        return;
+      }
+
       if (user.role === 'warden') {
         navigate('/admin/dashboard');
       } else {
@@ -46,7 +67,7 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoFill = async (targetRole: UserRole) => {
+  const handleDemoLogin = async (targetRole: UserRole) => {
     setError(null);
     setSubmitting(true);
     try {
@@ -57,7 +78,7 @@ export const LoginPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Quick login failed.');
+      setError(err.message || 'Demo login failed.');
     } finally {
       setSubmitting(false);
     }
@@ -67,41 +88,41 @@ export const LoginPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
+        background: '#f8fafc',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         padding: '32px 16px'
       }}
     >
-      <div style={{ maxWidth: '460px', width: '100%', margin: '0 auto' }}>
-        {/* Brand header */}
+      <div style={{ maxWidth: '440px', width: '100%', margin: '0 auto' }}>
+        {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
             <div
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: '#1e3a8a',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)'
+                boxShadow: '0 2px 6px rgba(30, 58, 138, 0.2)'
               }}
             >
-              <Building2 size={24} />
+              <Building2 size={22} />
             </div>
-            <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
-              Smart<span style={{ color: '#4f46e5' }}>Hostel</span>
+            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
+              Smart<span style={{ color: '#2563eb' }}>Hostel</span> &amp; Mess
             </span>
           </Link>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
             Sign In to Campus Portal
           </h1>
-          <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '4px' }}>
-            Select your role to access your personalized workstation
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
+            Official Residential &amp; Mess Management Station
           </p>
         </div>
 
@@ -111,8 +132,8 @@ export const LoginPage: React.FC = () => {
           style={{
             padding: '32px',
             background: '#ffffff',
-            borderRadius: '20px',
-            boxShadow: 'var(--shadow-lg)',
+            borderRadius: '16px',
+            boxShadow: 'var(--shadow-md)',
             border: '1.5px solid #e2e8f0'
           }}
         >
@@ -123,51 +144,51 @@ export const LoginPage: React.FC = () => {
               gridTemplateColumns: 'repeat(2, 1fr)',
               background: '#f1f5f9',
               padding: '4px',
-              borderRadius: '12px',
-              marginBottom: '24px'
+              borderRadius: '10px',
+              marginBottom: '20px'
             }}
           >
             <button
               type="button"
-              onClick={() => setRole('resident')}
+              onClick={() => handleRoleChange('resident')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                padding: '10px',
-                borderRadius: '10px',
-                fontSize: '0.875rem',
+                padding: '9px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
                 fontWeight: 700,
-                color: role === 'resident' ? '#4f46e5' : '#64748b',
+                color: role === 'resident' ? '#1e3a8a' : '#64748b',
                 background: role === 'resident' ? '#ffffff' : 'transparent',
-                boxShadow: role === 'resident' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.2s ease'
+                boxShadow: role === 'resident' ? 'var(--shadow-xs)' : 'none',
+                transition: 'all 0.15s ease'
               }}
             >
-              <User size={16} />
+              <User size={15} />
               <span>Resident</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setRole('warden')}
+              onClick={() => handleRoleChange('warden')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                padding: '10px',
-                borderRadius: '10px',
-                fontSize: '0.875rem',
+                padding: '9px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
                 fontWeight: 700,
-                color: role === 'warden' ? '#4338ca' : '#64748b',
+                color: role === 'warden' ? '#1e3a8a' : '#64748b',
                 background: role === 'warden' ? '#ffffff' : 'transparent',
-                boxShadow: role === 'warden' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.2s ease'
+                boxShadow: role === 'warden' ? 'var(--shadow-xs)' : 'none',
+                transition: 'all 0.15s ease'
               }}
             >
-              <ShieldCheck size={16} />
+              <ShieldCheck size={15} />
               <span>Warden Admin</span>
             </button>
           </div>
@@ -175,16 +196,16 @@ export const LoginPage: React.FC = () => {
           {error && (
             <div
               style={{
-                background: '#fee2e2',
+                background: '#fef2f2',
                 border: '1px solid #fecaca',
                 color: '#b91c1c',
-                padding: '12px',
+                padding: '12px 14px',
                 borderRadius: '10px',
                 fontSize: '0.85rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                marginBottom: '20px'
+                marginBottom: '18px'
               }}
             >
               <AlertCircle size={18} style={{ flexShrink: 0 }} />
@@ -194,13 +215,13 @@ export const LoginPage: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
                 {role === 'resident' ? 'Resident Student Email' : 'Warden Official Email'}
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail
-                  size={18}
+                  size={16}
                   style={{
                     position: 'absolute',
                     left: '12px',
@@ -212,20 +233,22 @@ export const LoginPage: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder={role === 'resident' ? 'resident@hostel.edu' : 'warden@hostel.edu'}
-                  className="form-input"
-                  style={{ paddingLeft: '38px' }}
+                  placeholder={role === 'resident' ? 'demo-resident@hostel.edu' : 'demo-warden@hostel.edu'}
+                  className="input-field"
+                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Password</label>
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+                Password
+              </label>
               <div style={{ position: 'relative' }}>
                 <Lock
-                  size={18}
+                  size={16}
                   style={{
                     position: 'absolute',
                     left: '12px',
@@ -238,10 +261,10 @@ export const LoginPage: React.FC = () => {
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="form-input"
-                  style={{ paddingLeft: '38px' }}
+                  className="input-field"
+                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                 />
               </div>
             </div>
@@ -250,50 +273,98 @@ export const LoginPage: React.FC = () => {
               type="submit"
               disabled={submitting}
               className="btn btn-primary"
-              style={{ width: '100%', padding: '12px', marginTop: '6px', fontSize: '0.95rem' }}
+              style={{
+                width: '100%',
+                height: '44px',
+                fontSize: '0.95rem',
+                background: '#1e3a8a',
+                borderColor: '#1e3a8a'
+              }}
             >
               {submitting ? 'Verifying...' : `Access ${role === 'warden' ? 'Warden Admin Desk' : 'Resident Portal'}`}
-              <ArrowRight size={18} />
+              <ArrowRight size={16} />
             </button>
           </form>
 
-          {/* Quick Demo Login Fillers for Evaluators */}
+          {/* Quick Evaluator Access Area */}
           <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-                Instant Evaluator Access
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Evaluator Instant Access
               </span>
-              <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>One-Click Login</span>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: '#059669',
+                  background: '#ecfdf5',
+                  padding: '2px 8px',
+                  borderRadius: '9999px',
+                  border: '1px solid #a7f3d0'
+                }}
+              >
+                <CheckCircle2 size={12} />
+                Real Firebase Auth
+              </span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
               <button
+                id="demo-resident-btn"
                 type="button"
-                onClick={() => handleDemoFill('resident')}
+                disabled={submitting}
+                onClick={() => handleDemoLogin('resident')}
                 className="btn btn-secondary btn-sm"
-                style={{ justifyContent: 'flex-start', padding: '8px 10px' }}
+                style={{
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1'
+                }}
               >
-                <User size={14} color="#4f46e5" />
-                <span style={{ fontSize: '0.8rem', textAlign: 'left' }}>Demo Resident</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#1e3a8a', fontSize: '0.825rem' }}>
+                  <User size={14} color="#2563eb" />
+                  <span>Demo Resident</span>
+                </div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                  demo-resident@hostel.edu
+                </span>
               </button>
 
               <button
+                id="demo-warden-btn"
                 type="button"
-                onClick={() => handleDemoFill('warden')}
+                disabled={submitting}
+                onClick={() => handleDemoLogin('warden')}
                 className="btn btn-secondary btn-sm"
-                style={{ justifyContent: 'flex-start', padding: '8px 10px' }}
+                style={{
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1'
+                }}
               >
-                <ShieldCheck size={14} color="#059669" />
-                <span style={{ fontSize: '0.8rem', textAlign: 'left' }}>Demo Warden</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#065f46', fontSize: '0.825rem' }}>
+                  <ShieldCheck size={14} color="#059669" />
+                  <span>Demo Warden</span>
+                </div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                  demo-warden@hostel.edu
+                </span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Footer link to register */}
-        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.875rem', color: '#64748b' }}>
-          New campus resident without an account?{' '}
-          <Link to="/register" style={{ color: '#4f46e5', fontWeight: 700 }}>
+        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: '#64748b' }}>
+          New student resident without an account?{' '}
+          <Link to="/register" style={{ color: '#1e3a8a', fontWeight: 700 }}>
             Register Room Profile
           </Link>
         </div>

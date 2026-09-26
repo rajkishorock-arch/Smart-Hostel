@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setStoredCurrentUser(matched);
           }
         } else {
-          // If Firebase says unauthenticated, clear session unless running in local offline demo mode
+          // If Firebase says unauthenticated, clear session
           const current = getStoredCurrentUser();
           if (current && !current.uid.startsWith('res-') && !current.uid.startsWith('warden-')) {
             setUser(null);
@@ -79,7 +79,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return () => unsubscribeAuth();
     } else {
-      // Local development / offline mode
       setUser(getStoredCurrentUser());
       setLoading(false);
 
@@ -95,12 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const cleanEmail = email.trim().toLowerCase();
+      let matchedUser: UserProfile | null = null;
 
-      // Check if user exists in local/demo storage
-      const users = getStoredUsers();
-      let matchedUser = Object.values(users).find(u => u.email.toLowerCase() === cleanEmail);
-
-      // Attempt Firebase auth if configured
+      // Real Firebase Authentication
       if (isFirebaseConfigured && auth) {
         try {
           const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
@@ -110,8 +106,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               matchedUser = userDoc.data() as UserProfile;
             }
           }
+
+          if (!matchedUser) {
+            // Document missing in Firestore: construct profile from auth
+            const fallbackRole: UserRole = cleanEmail.includes('warden') || cleanEmail.includes('admin') ? 'warden' : 'resident';
+            matchedUser = {
+              uid: cred.user.uid,
+              email: cleanEmail,
+              name: cleanEmail.split('@')[0],
+              role: fallbackRole,
+              phone: '+91 98000 00000',
+              hostel: 'Aravali Residence Hall',
+              block: fallbackRole === 'warden' ? 'Administration' : 'Block A',
+              roomNumber: fallbackRole === 'warden' ? 'Office-01' : '204',
+              bedNumber: fallbackRole === 'warden' ? 'N/A' : 'Bed 2',
+              createdAt: new Date().toISOString()
+            };
+          }
         } catch (fbErr: any) {
-          if (fbErr.code === 'auth/invalid-credential' || fbErr.code === 'auth/user-not-found' || fbErr.code === 'auth/wrong-password') {
+          if (
+            fbErr.code === 'auth/invalid-credential' ||
+            fbErr.code === 'auth/user-not-found' ||
+            fbErr.code === 'auth/wrong-password' ||
+            fbErr.code === 'auth/invalid-email'
+          ) {
             throw new Error('Invalid email or password. Please verify your credentials.');
           }
           if (fbErr.code === 'auth/too-many-requests') {
@@ -122,28 +140,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (!matchedUser) {
-        // Only if running in demo mode
-        const role = selectedRole || (cleanEmail.includes('warden') || cleanEmail.includes('admin') ? 'warden' : 'resident');
-        const namePart = cleanEmail.split('@')[0];
-        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        // Fallback local lookup for offline mock
+        const users = getStoredUsers();
+        matchedUser = Object.values(users).find(u => u.email.toLowerCase() === cleanEmail) || null;
+      }
 
-        matchedUser = {
-          uid: 'usr-' + Date.now(),
-          email: cleanEmail,
-          name: formattedName,
-          role,
-          phone: '+91 98' + Math.floor(10000000 + Math.random() * 90000000),
-          hostel: 'Aravali Boys Hostel',
-          block: role === 'warden' ? 'Administration' : 'Block A',
-          roomNumber: role === 'warden' ? 'Office-01' : '101',
-          bedNumber: role === 'warden' ? 'N/A' : 'Bed 1',
-          createdAt: new Date().toISOString()
-        };
-        saveStoredUser(matchedUser);
+      if (!matchedUser) {
+        throw new Error('Invalid email or password. Please verify your credentials.');
+      }
+
+      // If user selected "Warden" portal on login page, verify they actually have the warden role
+      if (selectedRole === 'warden' && matchedUser.role !== 'warden') {
+        throw new Error('Warden access is not enabled for this account.');
       }
 
       setStoredCurrentUser(matchedUser);
       setUser(matchedUser);
+      saveStoredUser(matchedUser);
       setLoading(false);
       return matchedUser;
     } catch (err: any) {
@@ -160,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cleanEmail = userData.email.trim().toLowerCase();
       let uid = 'usr-' + Date.now();
 
-      // PUBLIC SIGNUP IS STRICTLY RESIDENT ROLE
+      // PUBLIC SIGNUP IS STRICTLY RESIDENT ROLE - CANNOT BE OVERRIDDEN
       const assignedRole: UserRole = 'resident';
 
       if (isFirebaseConfigured && auth && userData.password) {
@@ -177,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (fbErr.code === 'auth/invalid-email') {
             throw new Error('Please enter a valid institutional email address.');
           }
-          console.warn('Firebase signup fallback to local account:', fbErr);
+          throw fbErr;
         }
       }
 
@@ -187,10 +200,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: userData.name.trim(),
         role: assignedRole,
         phone: userData.phone.trim() || '+91 98000 00000',
-        hostel: userData.hostel || 'Aravali Boys Hostel',
+        hostel: userData.hostel || 'Aravali Residence Hall',
         block: userData.block || 'Block A',
-        roomNumber: userData.roomNumber || '101',
-        bedNumber: userData.bedNumber || 'Bed 1',
+        roomNumber: userData.roomNumber || '204',
+        bedNumber: userData.bedNumber || 'Bed 2',
         createdAt: new Date().toISOString()
       };
 
@@ -215,8 +228,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const quickDemoLogin = async (role: 'resident' | 'warden'): Promise<UserProfile> => {
-    const demoEmail = role === 'warden' ? 'warden@hostel.edu' : 'resident@hostel.edu';
-    return login(demoEmail, 'Hostel@123', role);
+    // Official Real Firebase evaluator accounts
+    const demoEmail = role === 'warden' ? 'demo-warden@hostel.edu' : 'demo-resident@hostel.edu';
+    const demoPassword = 'Hostel@2026Demo';
+    return login(demoEmail, demoPassword, role);
   };
 
   const logout = async () => {

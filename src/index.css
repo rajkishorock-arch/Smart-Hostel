@@ -359,6 +359,59 @@ h1, h2, h3, h4, h5, h6 {
   animation: fadeInSubtle 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Responsive Navbar Media Rules */
+@media (min-width: 900px) {
+  .desktop-nav {
+    display: flex !important;
+  }
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+}
+
+/* Domain Interactive Card Hover Tints */
+.card-hostel {
+  border: 1.5px solid var(--border-default);
+  background: #ffffff;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hostel:hover {
+  border-color: #93c5fd;
+  background-color: #fafcff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.card-mess {
+  border: 1.5px solid var(--border-default);
+  background: #ffffff;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-mess:hover {
+  border-color: #a7f3d0;
+  background-color: #fbfdfc;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.08);
+}
+
+.card-maint {
+  border: 1.5px solid var(--border-default);
+  background: #ffffff;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-maint:hover {
+  border-color: #fde68a;
+  background-color: #fffdfa;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.08);
+}
+
 /* Respect Accessibility Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
@@ -371,3 +424,4 @@ h1, h2, h3, h4, h5, h6 {
     transition-duration: 0s !important;
   }
 }
+
