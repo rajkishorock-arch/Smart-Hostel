@@ -201,3 +201,49 @@ export interface SmartInsight {
   actionLabel?: string;
   timestamp?: string;
 }
+
+export interface Invoice {
+  id: string;
+  studentUid: string;
+  studentName: string;
+  studentEmail: string;
+  roomNumber?: string;
+  term: string; // e.g., "Spring Semester 2026"
+  roomFee: number;
+  messFee: number;
+  amenitiesFee: number;
+  totalAmount: number;
+  amountPaid: number;
+  status: 'Paid' | 'Pending' | 'Overdue';
+  dueDate: string;
+  paidAt?: string;
+  paymentMode?: 'UPI' | 'NetBanking' | 'Card' | 'Cash';
+  transactionRef?: string;
+  createdAt: string;
+}
+
+export interface IoTSensorReading {
+  id: string;
+  sensorType: 'Electricity Meter' | 'Water Level' | 'PIR Occupancy' | 'Dining RFID';
+  location: string;
+  currentValue: string | number;
+  unit: string;
+  status: 'Normal' | 'Warning' | 'Critical';
+  lastUpdated: string;
+  alertMessage?: string;
+}
+
+export interface VendorRecord {
+  id: string;
+  name: string;
+  category: 'Groceries & Provisions' | 'Dairy & Fresh Produce' | 'Plumbing & Hardware' | 'Electrical Supplies' | 'RO & Kitchen Equipment';
+  contactPerson: string;
+  phone: string;
+  email: string;
+  rating: number; // 1 to 5
+  activeContract: boolean;
+  pendingOrdersCount: number;
+  lastDeliveryDate: string;
+  paymentTerms: string;
+}
+

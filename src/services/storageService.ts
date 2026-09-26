@@ -10,7 +10,10 @@ import {
   TicketStatus,
   RepeatedIssueSummary,
   OperationalPriorityItem,
-  TicketCategory
+  TicketCategory,
+  Invoice,
+  IoTSensorReading,
+  VendorRecord
 } from '../types';
 import {
   DEMO_USERS,
@@ -1130,4 +1133,341 @@ export function getOperationalPriorities(
 
   return items;
 }
+
+/* ============================================================ */
+/* BILLING, INVOICE & PAYMENT MANAGEMENT (Feature 7)             */
+/* ============================================================ */
+export const EVENT_INVOICES_CHANGED = 'sh_invoices_updated';
+const INVOICES_STORAGE_KEY = 'sh_invoices_v1';
+
+const INITIAL_INVOICES: Invoice[] = [
+  {
+    id: 'INV-2026-001',
+    studentUid: 'resident-demo-uid',
+    studentName: 'Aarav Sharma',
+    studentEmail: 'demo-resident@hostel.edu',
+    roomNumber: 'A-204',
+    term: 'Spring Term 2026',
+    roomFee: 6500,
+    messFee: 4200,
+    amenitiesFee: 500,
+    totalAmount: 11200,
+    amountPaid: 11200,
+    status: 'Paid',
+    dueDate: '2026-03-31',
+    paidAt: '2026-03-15T11:20:00Z',
+    paymentMode: 'UPI',
+    transactionRef: 'UPI/20260315/99841284',
+    createdAt: '2026-03-01T08:00:00Z'
+  },
+  {
+    id: 'INV-2026-002',
+    studentUid: 'res-demo-2',
+    studentName: 'Rohan Deshmukh',
+    studentEmail: 'rohan.d@hostel.edu',
+    roomNumber: 'A-204',
+    term: 'Spring Term 2026',
+    roomFee: 6500,
+    messFee: 4200,
+    amenitiesFee: 500,
+    totalAmount: 11200,
+    amountPaid: 0,
+    status: 'Pending',
+    dueDate: '2026-04-05',
+    createdAt: '2026-03-01T08:00:00Z'
+  },
+  {
+    id: 'INV-2026-003',
+    studentUid: 'res-demo-3',
+    studentName: 'Priya Patel',
+    studentEmail: 'priya.p@hostel.edu',
+    roomNumber: 'B-101',
+    term: 'Spring Term 2026',
+    roomFee: 7500,
+    messFee: 4200,
+    amenitiesFee: 500,
+    totalAmount: 12200,
+    amountPaid: 0,
+    status: 'Overdue',
+    dueDate: '2026-03-20',
+    createdAt: '2026-02-25T08:00:00Z'
+  }
+];
+
+function getStoredInvoices(): Invoice[] {
+  try {
+    const raw = localStorage.getItem(INVOICES_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(INITIAL_INVOICES));
+      return INITIAL_INVOICES;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return INITIAL_INVOICES;
+  }
+}
+
+function saveStoredInvoices(invs: Invoice[]): void {
+  try {
+    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(invs));
+    window.dispatchEvent(new Event(EVENT_INVOICES_CHANGED));
+  } catch (err) {
+    console.error('Error saving invoices:', err);
+  }
+}
+
+export function subscribeInvoices(callback: (invoices: Invoice[]) => void): () => void {
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(collection(db, 'invoices'));
+      const unsub = onSnapshot(q, snap => {
+        if (!snap.empty) {
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Invoice));
+          callback(list);
+          saveStoredInvoices(list);
+        } else {
+          callback(getStoredInvoices());
+        }
+      }, () => {
+        callback(getStoredInvoices());
+      });
+      return unsub;
+    } catch {
+      // fallback
+    }
+  }
+
+  callback(getStoredInvoices());
+  const handler = () => callback(getStoredInvoices());
+  window.addEventListener(EVENT_INVOICES_CHANGED, handler);
+  return () => window.removeEventListener(EVENT_INVOICES_CHANGED, handler);
+}
+
+export async function payInvoice(
+  invoiceId: string,
+  paymentMode: 'UPI' | 'NetBanking' | 'Card' | 'Cash',
+  transactionRef?: string
+): Promise<boolean> {
+  const current = getStoredInvoices();
+  const index = current.findIndex(i => i.id === invoiceId);
+  if (index === -1) return false;
+
+  const now = new Date().toISOString();
+  const txRef = transactionRef || `TXN-${Date.now()}`;
+  const updatedInvoice: Invoice = {
+    ...current[index],
+    status: 'Paid',
+    amountPaid: current[index].totalAmount,
+    paidAt: now,
+    paymentMode,
+    transactionRef: txRef
+  };
+
+  current[index] = updatedInvoice;
+  saveStoredInvoices(current);
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'invoices', invoiceId), updatedInvoice, { merge: true });
+    } catch (e) {
+      console.warn('Failed to update invoice in Firestore:', e);
+    }
+  }
+
+  // Create notifications & log
+  createNotification({
+    userId: updatedInvoice.studentUid,
+    targetRole: 'resident',
+    title: 'Payment Successful',
+    message: `Payment of ₹${updatedInvoice.totalAmount.toLocaleString()} for ${updatedInvoice.term} verified (${txRef}).`,
+    type: 'success',
+    priority: 'Normal'
+  });
+
+  logActivity({
+    actor: 'System / Resident Gateway',
+    actorRole: 'system',
+    action: 'Invoice Settled',
+    target: `Invoice ${invoiceId} — ${updatedInvoice.studentName} (₹${updatedInvoice.totalAmount})`
+  });
+
+  return true;
+}
+
+export async function sendPaymentReminder(invoiceId: string): Promise<boolean> {
+  const current = getStoredInvoices();
+  const inv = current.find(i => i.id === invoiceId);
+  if (!inv) return false;
+
+  createNotification({
+    userId: inv.studentUid,
+    targetRole: 'resident',
+    title: 'Hostel Fee Due Reminder',
+    message: `Urgent: Your outstanding dues of ₹${(inv.totalAmount - inv.amountPaid).toLocaleString()} for ${inv.term} are due by ${inv.dueDate}. Please clear at the fee counter or via online portal.`,
+    type: 'system',
+    priority: 'High'
+  });
+
+  logActivity({
+    actor: 'Warden Administration',
+    actorRole: 'warden',
+    action: 'Payment Reminder Sent',
+    target: `Invoice ${inv.id} (${inv.studentName})`
+  });
+
+  return true;
+}
+
+/* ============================================================ */
+/* IOT & SMART INFRASTRUCTURE TELEMETRY (Feature 10)             */
+/* ============================================================ */
+export const EVENT_IOT_CHANGED = 'sh_iot_updated';
+
+const INITIAL_IOT_SENSORS: IoTSensorReading[] = [
+  {
+    id: 'IOT-PWR-01',
+    sensorType: 'Electricity Meter',
+    location: 'Main Substation Busbar & Genset Feed',
+    currentValue: 48.6,
+    unit: 'kW',
+    status: 'Normal',
+    lastUpdated: 'Live (5 sec ago)',
+    alertMessage: 'Power factor balanced at 0.98 pf'
+  },
+  {
+    id: 'IOT-WTR-UG',
+    sensorType: 'Water Level',
+    location: 'Underground Ground-Water Reservoir',
+    currentValue: 84,
+    unit: '% Full',
+    status: 'Normal',
+    lastUpdated: 'Live (12 sec ago)',
+    alertMessage: 'Pumping active from municipal supply bore'
+  },
+  {
+    id: 'IOT-WTR-OH',
+    sensorType: 'Water Level',
+    location: 'Overhead Gravity Feed Rooftop Tanks',
+    currentValue: 62,
+    unit: '% Full',
+    status: 'Normal',
+    lastUpdated: 'Live (15 sec ago)',
+    alertMessage: 'Booster pump auto-scheduled to trigger at 40%'
+  },
+  {
+    id: 'IOT-PIR-LIB',
+    sensorType: 'PIR Occupancy',
+    location: 'Block A Ground Reading Room',
+    currentValue: 'Occupied',
+    unit: 'State',
+    status: 'Normal',
+    lastUpdated: 'Live (1 sec ago)',
+    alertMessage: '14 occupants detected; HVAC active'
+  },
+  {
+    id: 'IOT-PIR-CORR',
+    sensorType: 'PIR Occupancy',
+    location: 'Block B 2nd Floor Corridor',
+    currentValue: 'Empty',
+    unit: 'State',
+    status: 'Normal',
+    lastUpdated: 'Live (30 sec ago)',
+    alertMessage: 'Lighting dimmed to 20% eco-mode'
+  }
+];
+
+export function subscribeIoTSensors(callback: (sensors: IoTSensorReading[]) => void): () => void {
+  callback(INITIAL_IOT_SENSORS);
+  return () => {};
+}
+
+export async function logRFIDAttendance(
+  studentUid: string,
+  meal: string
+): Promise<{ success: boolean; message: string; studentName: string }> {
+  const residents = getAllResidents();
+  const student = residents.find(r => r.uid === studentUid) || {
+    uid: studentUid,
+    name: 'Verified Student Resident'
+  };
+
+  logActivity({
+    actor: student.name,
+    actorRole: 'resident',
+    action: 'RFID Dining Check-In',
+    target: `${meal} Counter RFID Gate`
+  });
+
+  return {
+    success: true,
+    message: `RFID Check-in approved for ${meal}. Gate open.`,
+    studentName: student.name
+  };
+}
+
+/* ============================================================ */
+/* VENDOR & SUPPLY CHAIN MANAGEMENT (Feature 11)                 */
+/* ============================================================ */
+export const EVENT_VENDORS_CHANGED = 'sh_vendors_updated';
+
+const INITIAL_VENDORS: VendorRecord[] = [
+  {
+    id: 'VND-GROC-01',
+    name: 'Kisan Fresh Agro Wholesale',
+    category: 'Groceries & Provisions',
+    contactPerson: 'Harish Patel',
+    phone: '+91 98230 11223',
+    email: 'orders@kisanfresh.in',
+    rating: 4.8,
+    activeContract: true,
+    pendingOrdersCount: 2,
+    lastDeliveryDate: '2026-03-24',
+    paymentTerms: 'Net 30 Days'
+  },
+  {
+    id: 'VND-DAIR-02',
+    name: 'Amul Cooperative Campus Dairy',
+    category: 'Dairy & Fresh Produce',
+    contactPerson: 'Sukhvinder Singh',
+    phone: '+91 98140 33445',
+    email: 'institutional@amuldairy.coop',
+    rating: 4.9,
+    activeContract: true,
+    pendingOrdersCount: 1,
+    lastDeliveryDate: '2026-03-26',
+    paymentTerms: 'Weekly Settlement'
+  },
+  {
+    id: 'VND-PLMB-03',
+    name: 'Standard Plumbing & Pipe Fittings',
+    category: 'Plumbing & Hardware',
+    contactPerson: 'Mahesh Sharma',
+    phone: '+91 94120 55667',
+    email: 'supplies@stdplumbing.com',
+    rating: 4.5,
+    activeContract: true,
+    pendingOrdersCount: 0,
+    lastDeliveryDate: '2026-03-18',
+    paymentTerms: 'Net 15 Days'
+  },
+  {
+    id: 'VND-ELEC-04',
+    name: 'Havells & Schneider Commercial Spares',
+    category: 'Electrical Supplies',
+    contactPerson: 'Deepak Chawla',
+    phone: '+91 98990 77889',
+    email: 'chawla.electricals@gmail.com',
+    rating: 4.6,
+    activeContract: true,
+    pendingOrdersCount: 1,
+    lastDeliveryDate: '2026-03-22',
+    paymentTerms: 'Net 30 Days'
+  }
+];
+
+export function subscribeVendors(callback: (vendors: VendorRecord[]) => void): () => void {
+  callback(INITIAL_VENDORS);
+  return () => {};
+}
+
 

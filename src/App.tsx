@@ -28,10 +28,13 @@ import { MaintenanceCategoriesPage } from './pages/admin/MaintenanceCategoriesPa
 import { PredictiveAnalyticsPage } from './pages/admin/PredictiveAnalyticsPage';
 import { AdvancedReportsPage } from './pages/admin/AdvancedReportsPage';
 import { PreventiveMaintenancePage } from './pages/admin/PreventiveMaintenancePage';
-
+import { BillingManagementPage } from './pages/admin/BillingManagementPage';
+import { SmartInfrastructurePage } from './pages/admin/SmartInfrastructurePage';
+import { VendorManagementPage } from './pages/admin/VendorManagementPage';
 
 // Resident Portal Pages
 import { ResidentOverviewPage } from './pages/resident/ResidentOverviewPage';
+import { ResidentBillingPage } from './pages/resident/ResidentBillingPage';
 import { ResidentRoomPage } from './pages/resident/ResidentRoomPage';
 import { ResidentAllocationPage } from './pages/resident/ResidentAllocationPage';
 import { ResidentMessTodayPage } from './pages/resident/ResidentMessTodayPage';
@@ -210,6 +213,30 @@ export function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/finance/billing"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <BillingManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/iot/infrastructure"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <SmartInfrastructurePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/vendors"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <VendorManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
 
           {/* ============================================================ */}
@@ -292,6 +319,14 @@ export function App() {
             element={
               <ProtectedRoute allowedRole="resident">
                 <ResidentProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resident/billing"
+            element={
+              <ProtectedRoute allowedRole="resident">
+                <ResidentBillingPage />
               </ProtectedRoute>
             }
           />

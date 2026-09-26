@@ -30,7 +30,10 @@ import {
   TrendingUp,
   BarChart3,
   Sun,
-  Moon
+  Moon,
+  CreditCard,
+  Radio,
+  Truck
 } from 'lucide-react';
 import { SmartHostelAIAssistant } from '../common/SmartHostelAIAssistant';
 import { NotificationBell } from '../common/NotificationBell';
@@ -315,6 +318,32 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 <BarChart3 size={18} color={location.pathname === '/admin/analytics/reports' ? 'var(--brand-purple)' : undefined} />
                 <span>Advanced Reports &amp; BI</span>
               </NavLink>
+
+              <div className="sidebar-nav-section" style={{ marginTop: '16px' }}>Finance &amp; Smart Operations</div>
+              <NavLink
+                to="/admin/finance/billing"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <CreditCard size={18} color={location.pathname === '/admin/finance/billing' ? 'var(--brand-purple)' : undefined} />
+                <span>Billing &amp; Payments</span>
+              </NavLink>
+              <NavLink
+                to="/admin/iot/infrastructure"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <Radio size={18} color={location.pathname === '/admin/iot/infrastructure' ? 'var(--brand-purple)' : undefined} />
+                <span>IoT Smart Telemetry</span>
+              </NavLink>
+              <NavLink
+                to="/admin/vendors"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <Truck size={18} color={location.pathname === '/admin/vendors' ? 'var(--brand-purple)' : undefined} />
+                <span>Vendors &amp; Supplies</span>
+              </NavLink>
             </>
           ) : (
             <>
@@ -404,6 +433,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               >
                 <UserCheck size={18} />
                 <span>Profile</span>
+              </NavLink>
+              <NavLink
+                to="/resident/billing"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMobile}
+              >
+                <CreditCard size={18} />
+                <span>Fees &amp; Payments</span>
               </NavLink>
             </>
           )}
