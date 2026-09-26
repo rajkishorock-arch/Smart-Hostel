@@ -297,11 +297,11 @@ export const RegisterPage: React.FC = () => {
               gap: '8px'
             }}
           >
-            <ShieldCheck size={16} color="#4f46e5" style={{ flexShrink: 0 }} />
+            <ShieldCheck size={16} color="#065f46" style={{ flexShrink: 0 }} />
             <span>
-              Warden Administration accounts are provisioned exclusively through authorized campus credentials.{' '}
-              <Link to="/login?role=warden" style={{ color: '#4f46e5', fontWeight: 700 }}>
-                Warden Sign In
+              Warden Administration accounts require institutional invitation validation.{' '}
+              <Link to="/warden/register" style={{ color: '#065f46', fontWeight: 700 }}>
+                Official Warden Onboarding →
               </Link>
             </span>
           </div>

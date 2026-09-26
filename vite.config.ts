@@ -228,7 +228,101 @@ Issue Description: "${text}"`;
   };
 }
 
+function wardenRegisterDevPlugin(): Plugin {
+  return {
+    name: 'warden-register-dev-middleware',
+    configureServer(server) {
+      server.middlewares.use('/api/warden/register', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          return res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+        }
+
+        let body = '';
+        req.on('data', chunk => {
+          body += chunk;
+        });
+
+        req.on('end', async () => {
+          try {
+            const parsed = body ? JSON.parse(body) : {};
+            const { name, email, password, phone, hostel, inviteCode } = parsed;
+
+            const cleanCode = (inviteCode || '').trim();
+            const expectedCode = process.env.WARDEN_INVITE_CODE || 'CAMPUS-WARDEN-SECURE-2026';
+
+            if (!cleanCode || cleanCode !== expectedCode) {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              return res.end(
+                JSON.stringify({
+                  error: 'Invalid or unauthorized institutional warden invitation code. Administrator onboarding access denied.'
+                })
+              );
+            }
+
+            const cleanName = (name || '').trim();
+            const cleanEmail = (email || '').trim().toLowerCase();
+            const cleanPhone = (phone || '').trim();
+            const cleanHostel = (hostel || 'Aravali Residence Hall').trim();
+
+            if (!cleanName || cleanName.length < 2) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ error: 'Full legal name is required.' }));
+            }
+            if (!cleanEmail || !cleanEmail.includes('@')) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ error: 'Valid institutional email is required.' }));
+            }
+            if (!password || password.length < 6) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ error: 'Password must be at least 6 characters.' }));
+            }
+
+            const uid = 'warden-' + Date.now();
+            const profileData = {
+              uid,
+              name: cleanName,
+              email: cleanEmail,
+              role: 'warden',
+              phone: cleanPhone || '+91 98000 00000',
+              hostel: cleanHostel,
+              block: 'Administration',
+              roomNumber: 'Office-01',
+              bedNumber: 'N/A',
+              status: 'active',
+              createdAt: new Date().toISOString()
+            };
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(
+              JSON.stringify({
+                success: true,
+                uid,
+                email: cleanEmail,
+                role: 'warden',
+                profile: profileData,
+                message: 'Warden administrator account successfully created and authorized.'
+              })
+            );
+          } catch (err: any) {
+            res.statusCode = 500;
+            return res.end(JSON.stringify({ error: err?.message || 'Server error' }));
+          }
+        });
+      });
+    }
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), maintenanceAiDevPlugin()],
+  plugins: [react(), maintenanceAiDevPlugin(), wardenRegisterDevPlugin()],
 })

@@ -7,6 +7,7 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { WardenRegisterPage } from './pages/admin/WardenRegisterPage';
 
 // Warden Portal Pages
 import { WardenOverviewPage } from './pages/admin/WardenOverviewPage';
@@ -47,6 +48,8 @@ export function App() {
           {/* Authentication Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/warden/register" element={<WardenRegisterPage />} />
+          <Route path="/admin/register" element={<WardenRegisterPage />} />
 
           {/* ============================================================ */}
           {/* WARDEN PORTAL ROUTES (Protected: allowedRole="warden")        */}

@@ -233,7 +233,7 @@ export const LoginPage: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder={role === 'resident' ? 'demo-resident@hostel.edu' : 'demo-warden@hostel.edu'}
+                  placeholder={role === 'resident' ? 'resident@campus.edu' : 'warden@campus.edu'}
                   className="input-field"
                   style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
                   value={email}
@@ -286,87 +286,91 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Evaluator Access Area */}
-          <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Evaluator Instant Access
-              </span>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  color: '#059669',
-                  background: '#ecfdf5',
-                  padding: '2px 8px',
-                  borderRadius: '9999px',
-                  border: '1px solid #a7f3d0'
-                }}
-              >
-                <CheckCircle2 size={12} />
-                Real Firebase Auth
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-              <button
-                id="demo-resident-btn"
-                type="button"
-                disabled={submitting}
-                onClick={() => handleDemoLogin('resident')}
-                className="btn btn-secondary btn-sm"
-                style={{
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#1e3a8a', fontSize: '0.825rem' }}>
-                  <User size={14} color="#2563eb" />
-                  <span>Demo Resident</span>
-                </div>
-                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
-                  demo-resident@hostel.edu
+          {/* Quick Evaluator Access Area (strictly gated by VITE_DEMO_MODE=true) */}
+          {import.meta.env.VITE_DEMO_MODE === 'true' && (
+            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Evaluator Instant Access
                 </span>
-              </button>
-
-              <button
-                id="demo-warden-btn"
-                type="button"
-                disabled={submitting}
-                onClick={() => handleDemoLogin('warden')}
-                className="btn btn-secondary btn-sm"
-                style={{
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#065f46', fontSize: '0.825rem' }}>
-                  <ShieldCheck size={14} color="#059669" />
-                  <span>Demo Warden</span>
-                </div>
-                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
-                  demo-warden@hostel.edu
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    color: '#059669',
+                    background: '#ecfdf5',
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    border: '1px solid #a7f3d0'
+                  }}
+                >
+                  <CheckCircle2 size={12} />
+                  Demo Mode Active
                 </span>
-              </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                <button
+                  id="demo-resident-btn"
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleDemoLogin('resident')}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#1e3a8a', fontSize: '0.825rem' }}>
+                    <User size={14} color="#2563eb" />
+                    <span>Demo Resident</span>
+                  </div>
+                </button>
+
+                <button
+                  id="demo-warden-btn"
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleDemoLogin('warden')}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#065f46', fontSize: '0.825rem' }}>
+                    <ShieldCheck size={14} color="#059669" />
+                    <span>Demo Warden</span>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Footer link to register */}
-        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: '#64748b' }}>
-          New student resident without an account?{' '}
-          <Link to="/register" style={{ color: '#1e3a8a', fontWeight: 700 }}>
-            Register Room Profile
-          </Link>
+        {/* Footer links to register */}
+        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div>
+            New student resident?{' '}
+            <Link to="/register" style={{ color: '#1e3a8a', fontWeight: 700 }}>
+              Register Room Profile
+            </Link>
+          </div>
+          <div style={{ fontSize: '0.8rem' }}>
+            Hostel Administrator?{' '}
+            <Link to="/warden/register" style={{ color: '#065f46', fontWeight: 700 }}>
+              Official Warden Onboarding →
+            </Link>
+          </div>
         </div>
       </div>
     </div>

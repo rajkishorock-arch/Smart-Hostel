@@ -133,41 +133,43 @@ export const Hero: React.FC = () => {
               </>
             )}
 
-            {/* Quick Demo Access Buttons for Evaluators */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                id="hero-demo-resident-btn"
-                onClick={() => quickDemoLogin('resident')}
-                className="btn btn-outline"
-                style={{
-                  background: '#f8fafc',
-                  color: '#1e293b',
-                  fontSize: '0.85rem',
-                  padding: '9px 14px',
-                  borderColor: '#cbd5e1'
-                }}
-                title="Instant access as Demo Resident"
-              >
-                <Zap size={14} color="#d97706" />
-                <span>Demo Resident</span>
-              </button>
-              <button
-                id="hero-demo-warden-btn"
-                onClick={() => quickDemoLogin('warden')}
-                className="btn btn-outline"
-                style={{
-                  background: '#f8fafc',
-                  color: '#1e293b',
-                  fontSize: '0.85rem',
-                  padding: '9px 14px',
-                  borderColor: '#cbd5e1'
-                }}
-                title="Instant access as Demo Warden"
-              >
-                <ShieldCheck size={14} color="#059669" />
-                <span>Demo Warden</span>
-              </button>
-            </div>
+            {/* Quick Demo Access Buttons for Evaluators (strictly gated by VITE_DEMO_MODE=true) */}
+            {import.meta.env.VITE_DEMO_MODE === 'true' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  id="hero-demo-resident-btn"
+                  onClick={() => quickDemoLogin('resident')}
+                  className="btn btn-outline"
+                  style={{
+                    background: '#f8fafc',
+                    color: '#1e293b',
+                    fontSize: '0.85rem',
+                    padding: '9px 14px',
+                    borderColor: '#cbd5e1'
+                  }}
+                  title="Instant access as Demo Resident"
+                >
+                  <Zap size={14} color="#d97706" />
+                  <span>Demo Resident</span>
+                </button>
+                <button
+                  id="hero-demo-warden-btn"
+                  onClick={() => quickDemoLogin('warden')}
+                  className="btn btn-outline"
+                  style={{
+                    background: '#f8fafc',
+                    color: '#1e293b',
+                    fontSize: '0.85rem',
+                    padding: '9px 14px',
+                    borderColor: '#cbd5e1'
+                  }}
+                  title="Instant access as Demo Warden"
+                >
+                  <ShieldCheck size={14} color="#059669" />
+                  <span>Demo Warden</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Domain Badges Bar */}

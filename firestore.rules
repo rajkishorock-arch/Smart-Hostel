@@ -32,12 +32,14 @@ service cloud.firestore {
         request.resource.data.uid == userId;
 
       // Profile updates:
-      // - Normal user: can update contact info, but CANNOT change role or UID.
+      // - Normal user: can update contact info, but CANNOT change role, UID, roomNumber, or bedNumber.
       // - Warden: authorized to modify roles or room assignments.
       allow update: if isAuthenticated() && 
         (isWarden() || (isOwner(userId) && 
           request.resource.data.role == resource.data.role &&
-          request.resource.data.uid == resource.data.uid));
+          request.resource.data.uid == resource.data.uid &&
+          (!('roomNumber' in request.resource.data) || request.resource.data.roomNumber == resource.data.roomNumber) &&
+          (!('bedNumber' in request.resource.data) || request.resource.data.bedNumber == resource.data.bedNumber)));
 
       // Only wardens can delete user records
       allow delete: if isWarden();

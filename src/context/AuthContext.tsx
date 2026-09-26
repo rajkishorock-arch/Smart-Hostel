@@ -24,6 +24,7 @@ interface AuthContextType {
   isResident: boolean;
   login: (email: string, password: string, role?: UserRole) => Promise<UserProfile>;
   signup: (userData: Omit<UserProfile, 'uid' | 'createdAt' | 'role'> & { password?: string }) => Promise<UserProfile>;
+  registerWarden: (data: { name: string; email: string; password: string; phone?: string; hostel?: string; inviteCode: string }) => Promise<UserProfile>;
   logout: () => Promise<void>;
   quickDemoLogin: (role: 'resident' | 'warden') => Promise<UserProfile>;
 }
@@ -55,26 +56,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn('Firestore profile lookup error:', err);
           }
 
-          // Fallback to local storage or fallback profile if Firestore doc not yet created
-          const localUsers = getStoredUsers();
-          const matched = Object.values(localUsers).find(
-            u => u.email.toLowerCase() === fbUser.email?.toLowerCase() || u.uid === fbUser.uid
-          );
-          if (matched) {
-            setUser(matched);
-            setStoredCurrentUser(matched);
+          // If in demo mode and email is demo account
+          if (import.meta.env.VITE_DEMO_MODE === 'true' && (fbUser.email === 'demo-warden@hostel.edu' || fbUser.email === 'demo-resident@hostel.edu')) {
+            const demoRole: UserRole = fbUser.email === 'demo-warden@hostel.edu' ? 'warden' : 'resident';
+            const demoProfile: UserProfile = {
+              uid: fbUser.uid,
+              email: fbUser.email,
+              name: demoRole === 'warden' ? 'Demo Warden' : 'Demo Resident',
+              role: demoRole,
+              phone: '+91 98000 00000',
+              hostel: 'Aravali Residence Hall',
+              block: demoRole === 'warden' ? 'Administration' : 'Block A',
+              roomNumber: demoRole === 'warden' ? 'Office-01' : '204',
+              bedNumber: demoRole === 'warden' ? 'N/A' : 'Bed 2',
+              createdAt: new Date().toISOString()
+            };
+            setUser(demoProfile);
+            setStoredCurrentUser(demoProfile);
+            setLoading(false);
+            return;
           }
+
+          // No verified profile document in Firestore: reject and sign out immediately
+          await firebaseSignOut(auth).catch(() => {});
+          setUser(null);
+          setStoredCurrentUser(null);
+          setLoading(false);
         } else {
-          // If Firebase says unauthenticated, clear session
-          const current = getStoredCurrentUser();
-          if (current && !current.uid.startsWith('res-') && !current.uid.startsWith('warden-')) {
-            setUser(null);
-            setStoredCurrentUser(null);
-          } else {
-            setUser(current);
-          }
+          setUser(null);
+          setStoredCurrentUser(null);
+          setLoading(false);
         }
-        setLoading(false);
       });
 
       return () => unsubscribeAuth();
@@ -108,20 +120,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (!matchedUser) {
-            // Document missing in Firestore: construct profile from auth
-            const fallbackRole: UserRole = cleanEmail.includes('warden') || cleanEmail.includes('admin') ? 'warden' : 'resident';
-            matchedUser = {
-              uid: cred.user.uid,
-              email: cleanEmail,
-              name: cleanEmail.split('@')[0],
-              role: fallbackRole,
-              phone: '+91 98000 00000',
-              hostel: 'Aravali Residence Hall',
-              block: fallbackRole === 'warden' ? 'Administration' : 'Block A',
-              roomNumber: fallbackRole === 'warden' ? 'Office-01' : '204',
-              bedNumber: fallbackRole === 'warden' ? 'N/A' : 'Bed 2',
-              createdAt: new Date().toISOString()
-            };
+            // Profile does not exist in Firestore
+            if (import.meta.env.VITE_DEMO_MODE === 'true' && (cleanEmail === 'demo-warden@hostel.edu' || cleanEmail === 'demo-resident@hostel.edu')) {
+              const demoRole: UserRole = cleanEmail === 'demo-warden@hostel.edu' ? 'warden' : 'resident';
+              matchedUser = {
+                uid: cred.user.uid,
+                email: cleanEmail,
+                name: demoRole === 'warden' ? 'Demo Warden' : 'Demo Resident',
+                role: demoRole,
+                phone: '+91 98000 00000',
+                hostel: 'Aravali Residence Hall',
+                block: demoRole === 'warden' ? 'Administration' : 'Block A',
+                roomNumber: demoRole === 'warden' ? 'Office-01' : '204',
+                bedNumber: demoRole === 'warden' ? 'N/A' : 'Bed 2',
+                createdAt: new Date().toISOString()
+              };
+            } else {
+              // Sign out immediately and display error message
+              await firebaseSignOut(auth).catch(() => {});
+              throw new Error('Your account profile could not be verified. Please register your account profile or contact hostel administration.');
+            }
           }
         } catch (fbErr: any) {
           if (
@@ -135,14 +153,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (fbErr.code === 'auth/too-many-requests') {
             throw new Error('Too many failed login attempts. Please wait a few moments.');
           }
+          if (fbErr.message && fbErr.message.includes('profile could not be verified')) {
+            throw fbErr;
+          }
           console.warn('Firebase login attempt fallback to local auth:', fbErr);
         }
-      }
-
-      if (!matchedUser) {
-        // Fallback local lookup for offline mock
-        const users = getStoredUsers();
-        matchedUser = Object.values(users).find(u => u.email.toLowerCase() === cleanEmail) || null;
       }
 
       if (!matchedUser) {
@@ -227,8 +242,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const registerWarden = async (data: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    hostel?: string;
+    inviteCode: string;
+  }): Promise<UserProfile> => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/warden/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Warden registration failed.');
+      }
+
+      // Sign in client Firebase Auth
+      if (isFirebaseConfigured && auth && data.password) {
+        await signInWithEmailAndPassword(auth, data.email.trim().toLowerCase(), data.password).catch(() => {});
+      }
+
+      const profile = result.profile as UserProfile;
+      setStoredCurrentUser(profile);
+      setUser(profile);
+      saveStoredUser(profile);
+      setLoading(false);
+      return profile;
+    } catch (err: any) {
+      setLoading(false);
+      throw new Error(err.message || 'Warden registration failed.');
+    }
+  };
+
   const quickDemoLogin = async (role: 'resident' | 'warden'): Promise<UserProfile> => {
-    // Official Real Firebase evaluator accounts
+    if (import.meta.env.VITE_DEMO_MODE !== 'true') {
+      throw new Error('Demo login access is disabled in production.');
+    }
     const demoEmail = role === 'warden' ? 'demo-warden@hostel.edu' : 'demo-resident@hostel.edu';
     const demoPassword = 'Hostel@2026Demo';
     return login(demoEmail, demoPassword, role);
@@ -253,6 +307,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isResident: user?.role === 'resident',
     login,
     signup,
+    registerWarden,
     logout,
     quickDemoLogin
   };
