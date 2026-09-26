@@ -27,6 +27,7 @@ import {
   Bell,
   Home
 } from 'lucide-react';
+import { SmartHostelAIAssistant } from '../common/SmartHostelAIAssistant';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -503,6 +504,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
         {/* Workspace Content */}
         <main className="portal-workspace">{children}</main>
+
+        {/* Floating Role-Aware SmartHostel AI Assistant */}
+        <SmartHostelAIAssistant />
       </div>
     </div>
   );

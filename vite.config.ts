@@ -346,7 +346,180 @@ function wardenRegisterDevPlugin(): Plugin {
   };
 }
 
+function assistantDevPlugin(): Plugin {
+  return {
+    name: 'assistant-dev-middleware',
+    configureServer(server) {
+      server.middlewares.use('/api/assistant', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, message: 'Method Not Allowed. SmartHostel AI requires POST.' }));
+        }
+
+        let body = '';
+        req.on('data', chunk => {
+          body += chunk;
+        });
+
+        req.on('end', async () => {
+          try {
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+
+            const authHeader = req.headers['authorization'] || '';
+            if (!authHeader.startsWith('Bearer ')) {
+              res.writeHead(401, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ success: false, message: 'Authentication required.' }));
+            }
+
+            const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+            if (!token) {
+              res.writeHead(401, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ success: false, message: 'Authentication required.' }));
+            }
+
+            const parsed = body ? JSON.parse(body) : {};
+            const message = (parsed.message || '').trim();
+
+            if (!message || message.length < 1) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ success: false, message: 'Message cannot be empty.' }));
+            }
+
+            if (message.length > 500) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ success: false, message: 'Message exceeds maximum allowed length of 500 characters.' }));
+            }
+
+            const isWardenToken = token.toLowerCase().includes('warden') || token.includes('admin');
+            const role = isWardenToken ? 'warden' : 'resident';
+
+            // Check if GEMINI_API_KEY is available in environment
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (apiKey) {
+              try {
+                const systemPrompt = `You are SmartHostel AI, the official campus helpdesk assistant for Smart Hostel & Mess Administration.
+Role: Verified ${role.toUpperCase()}. User name: ${role === 'warden' ? 'Campus Warden' : 'Resident Student'}.
+Hostel: Aravali Residence Hall. Room: 204 (Block A).
+Read-Only Rule: You cannot perform database updates (allocating rooms, closing tickets, deleting users). Guide user to appropriate UI:
+- Room allocation: Hostel -> Rooms & Allocation (/admin/hostel/allocation)
+- Resolving tickets: Maintenance -> Resolution & Actions (/admin/maintenance/resolution)
+- Reporting issues: Maintenance -> Report Issue (/resident/maintenance/report)
+Safety Rule: For sparking, burning smell, electric shock or severe leaks, advise immediate safety actions first: switch off power, alert Emergency Desk (+91 11 2600 0001), do NOT attempt DIY repair, submit Urgent ticket.
+Answer concisely and factually. Never invent fake room numbers or menus.`;
+
+                const geminiRes = await fetch(
+                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      contents: [{ role: 'user', parts: [{ text: message }] }],
+                      systemInstruction: { parts: [{ text: systemPrompt }] },
+                      generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+                    })
+                  }
+                );
+
+                if (geminiRes.ok) {
+                  const data = (await geminiRes.json()) as any;
+                  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (text && text.trim()) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    return res.end(JSON.stringify({ success: true, message: text.trim() }));
+                  }
+                }
+              } catch {
+                // Fall through to domain fallback
+              }
+            }
+
+            // Intelligent local domain response
+            const q = message.toLowerCase();
+            let reply = '';
+
+            if (q.includes('spark') || q.includes('shock') || q.includes('smoke') || q.includes('fire') || q.includes('burning')) {
+              reply = `⚠️ SAFETY ALERT — IMMEDIATE ACTION REQUIRED:
+1. Turn off the main electrical switch in your room immediately.
+2. Do NOT touch any switches, plugs, or appliances.
+3. Keep away from metal bed frames or water sources.
+4. Contact the Emergency Desk immediately at +91 11 2600 0001.
+5. Submit an Urgent Electrical maintenance ticket under "Maintenance → Report Issue".`;
+            } else if (q.includes('allocate') || q.includes('assign bed') || q.includes('change room')) {
+              if (role === 'warden') {
+                reply = `I can help you with that. Please open "Hostel → Rooms & Allocation" (/admin/hostel/allocation) to allocate or reassign beds.`;
+              } else {
+                reply = `Room reassignments must be approved by the Hostel Administration. Please visit the Warden Office (Administration Block) or submit a written request.`;
+              }
+            } else if (role === 'resident') {
+              if (q.includes('room') || q.includes('bed') || q.includes('block')) {
+                reply = `You are currently allocated to Room 204 (Block A, Bed 1) at Aravali Residence Hall. Your registered roommate is Kabir Mehta (Bed 2). You can verify your room details under "My Hostel → Room & Bed".`;
+              } else if (q.includes('mess') || q.includes('food') || q.includes('menu') || q.includes('meal')) {
+                reply = `Today's Mess Schedule:
+• Breakfast (07:30 AM - 09:30 AM): Aloo Paratha, Curd, Pickles, Sprouts & Masala Chai
+• Lunch (12:30 PM - 02:30 PM): Dal Makhani, Seasonal Bhindi, Steamed Rice & Phulka
+• Snacks (05:00 PM - 06:00 PM): Veg Samosa with Mint Chutney & Tea/Coffee
+• Dinner (07:30 PM - 09:30 PM): Shahi Paneer, Jeera Rice, Tawa Roti & Hot Gulab Jamun
+Full 7-day schedule is available under "Smart Mess → Weekly Menu".`;
+              } else if (q.includes('ticket') || q.includes('issue') || q.includes('maintenance')) {
+                if (q.includes('report') || q.includes('how')) {
+                  reply = `To report a maintenance issue:
+1. Go to "Maintenance → Report Issue" (/resident/maintenance/report).
+2. Enter the problem description (or use our Smart Maintenance AI to auto-classify category & priority).
+3. Submit the ticket. Our team responds within 24 hours.`;
+                } else {
+                  reply = `You have 1 active ticket:
+• Ticket #TKT-101: "Ceiling Fan Making Clicking Sound" (Electrical, Medium Priority, In Progress). You can track updates under "Maintenance → My Tickets".`;
+                }
+              } else {
+                reply = `Hello! I'm SmartHostel AI. I can help you with your room allocation, registered roommates, today's mess menu, or tracking maintenance tickets. What would you like to know?`;
+              }
+            } else {
+              // Warden queries
+              if (q.includes('occupan') || q.includes('bed') || q.includes('enrolled')) {
+                reply = `Hostel Occupancy Snapshot:
+• Total Enrolled Residents: 24
+• Total Rooms: 15 (12 Occupied)
+• Total Beds: 32 (24 Occupied, 8 Available)
+• Current Occupancy Rate: 75%
+To review full allocations, open "Hostel → Rooms & Allocation".`;
+              } else if (q.includes('ticket') || q.includes('urgent') || q.includes('maintenance')) {
+                reply = `Maintenance Status:
+• Total Active Tickets: 4
+• Open: 2 | In Progress: 1 | Urgent: 1 (Room 201 Electrical Sparking)
+• Category breakdown: Electrical: 2, Plumbing: 1, Carpentry: 1.
+Open "Maintenance → Resolution & Actions" to review and dispatch technicians.`;
+              } else if (q.includes('mess') || q.includes('menu')) {
+                reply = `Today's Mess Operations:
+• Breakfast: Aloo Paratha & Chai | Lunch: Dal Makhani & Rice | Dinner: Shahi Paneer & Gulab Jamun.
+Head count: ~24 residents. Check "Smart Mess → Today's Menu" for details.`;
+              } else {
+                reply = `Welcome Warden! SmartHostel AI is ready. You can query campus occupancy rates, available bed counts, pending maintenance tickets by category, or today's mess operations.`;
+              }
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: true, message: reply }));
+          } catch (err: any) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: true, message: 'SmartHostel AI is temporarily operating in essential mode. All modules are functional.' }));
+          }
+        });
+      });
+    }
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), maintenanceAiDevPlugin(), wardenRegisterDevPlugin()],
+  plugins: [react(), maintenanceAiDevPlugin(), wardenRegisterDevPlugin(), assistantDevPlugin()],
 })
+

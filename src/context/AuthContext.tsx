@@ -27,6 +27,7 @@ interface AuthContextType {
   registerWarden: (data: { name: string; email: string; password: string; phone?: string; hostel?: string; inviteCode: string }) => Promise<UserProfile>;
   logout: () => Promise<void>;
   quickDemoLogin: (role: 'resident' | 'warden') => Promise<UserProfile>;
+  getIdToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -286,6 +287,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const getIdToken = async (): Promise<string | null> => {
+    try {
+      if (isFirebaseConfigured && auth?.currentUser) {
+        return await auth.currentUser.getIdToken();
+      }
+    } catch {
+      // Fallback
+    }
+    return user ? `session-${user.uid}` : null;
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -296,7 +308,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signup,
     registerWarden,
     logout,
-    quickDemoLogin
+    quickDemoLogin,
+    getIdToken
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
