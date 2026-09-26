@@ -17,6 +17,17 @@ export type TicketCategory = 'Electrical' | 'Plumbing' | 'Carpentry' | 'Other';
 export type TicketPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type TicketStatus = 'Open' | 'In Progress' | 'Resolved';
 
+export interface SmartMaintenanceAIResult {
+  category: TicketCategory;
+  priority: TicketPriority;
+  urgency: 'Low' | 'Medium' | 'High';
+  summary: string;
+  suggestedAction: string;
+  reasoning: string;
+  confidence: number;
+  source?: 'gemini' | 'local_fallback';
+}
+
 export interface Ticket {
   id: string;
   residentId: string;
@@ -31,6 +42,10 @@ export interface Ticket {
   aiConfidence?: number;
   aiSuggestedCategory?: TicketCategory;
   aiSuggestedPriority?: TicketPriority;
+  aiUrgency?: 'Low' | 'Medium' | 'High';
+  aiSummary?: string;
+  aiSuggestedAction?: string;
+  aiReasoning?: string;
   wardenNotes?: string;
   resolvedAt?: string;
   createdAt: string;

@@ -12,7 +12,11 @@ import {
   ArrowRight,
   ShieldCheck,
   Check,
-  FileText
+  FileText,
+  Sparkles,
+  Zap,
+  Droplets,
+  Hammer
 } from 'lucide-react';
 
 export const MaintenanceResolutionPage: React.FC = () => {
@@ -25,6 +29,14 @@ export const MaintenanceResolutionPage: React.FC = () => {
   const [newStatus, setNewStatus] = useState<Ticket['status']>('In Progress');
   const [wardenNotes, setWardenNotes] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Derived real-time AI Insights metrics (Section 11)
+  const activeTickets = tickets.filter(t => t.status !== 'Resolved');
+  const electricalActive = activeTickets.filter(t => t.category === 'Electrical').length;
+  const plumbingActive = activeTickets.filter(t => t.category === 'Plumbing').length;
+  const carpentryActive = activeTickets.filter(t => t.category === 'Carpentry').length;
+  const urgentActive = activeTickets.filter(t => t.priority === 'Urgent').length;
+  const aiClassifiedCount = tickets.filter(t => t.aiClassified).length;
 
   useEffect(() => {
     const unsub = subscribeTickets(
@@ -138,6 +150,68 @@ export const MaintenanceResolutionPage: React.FC = () => {
         </div>
       )}
 
+      {/* AI MAINTENANCE INSIGHTS PANEL (Section 11) */}
+      <div
+        style={{
+          background: '#ffffff',
+          border: '1px solid var(--neutral-border)',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          marginBottom: '28px',
+          boxShadow: 'var(--shadow-xs)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={18} color="#d97706" />
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              AI Maintenance Insights
+            </h2>
+          </div>
+          <span style={{ fontSize: '0.76rem', color: 'var(--neutral-muted)', fontWeight: 600 }}>
+            Live calculations derived from real Cloud Firestore tickets
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '12px'
+          }}
+        >
+          <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--neutral-muted)', textTransform: 'uppercase' }}>Active Issues</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--neutral-dark)', marginTop: '2px' }}>{activeTickets.length}</div>
+          </div>
+
+          <div style={{ background: '#fffbeb', padding: '12px', borderRadius: '10px', border: '1px solid #fef3c7', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#b45309', textTransform: 'uppercase' }}>Electrical</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#d97706', marginTop: '2px' }}>{electricalActive}</div>
+          </div>
+
+          <div style={{ background: '#eff6ff', padding: '12px', borderRadius: '10px', border: '1px solid #dbeafe', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase' }}>Plumbing</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>{plumbingActive}</div>
+          </div>
+
+          <div style={{ background: '#fff7ed', padding: '12px', borderRadius: '10px', border: '1px solid #ffedd5', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>Carpentry</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ea580c', marginTop: '2px' }}>{carpentryActive}</div>
+          </div>
+
+          <div style={{ background: '#fef2f2', padding: '12px', borderRadius: '10px', border: '1px solid #fee2e2', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase' }}>Urgent / Hazard</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#dc2626', marginTop: '2px' }}>{urgentActive}</div>
+          </div>
+
+          <div style={{ background: '#faf5ff', padding: '12px', borderRadius: '10px', border: '1px solid #f3e8ff', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#7e22ce', textTransform: 'uppercase' }}>AI Classified</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#9333ea', marginTop: '2px' }}>{aiClassifiedCount}</div>
+          </div>
+        </div>
+      </div>
+
       {/* 3-Column Maintenance Board (OPEN, IN PROGRESS, RESOLVED) */}
       <div
         style={{
@@ -207,18 +281,25 @@ export const MaintenanceResolutionPage: React.FC = () => {
                       <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--neutral-dark)' }}>
                         #{t.id}
                       </span>
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: 700,
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          background: t.priority === 'Urgent' ? '#fef2f2' : t.priority === 'High' ? '#fffbeb' : '#f8fafc',
-                          color: t.priority === 'Urgent' ? '#dc2626' : t.priority === 'High' ? '#d97706' : '#64748b'
-                        }}
-                      >
-                        {t.priority}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {t.aiClassified && (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <Sparkles size={10} color="#d97706" /> AI Classified
+                          </span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: t.priority === 'Urgent' ? '#fef2f2' : t.priority === 'High' ? '#fffbeb' : '#f8fafc',
+                            color: t.priority === 'Urgent' ? '#dc2626' : t.priority === 'High' ? '#d97706' : '#64748b'
+                          }}
+                        >
+                          {t.priority}
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--brand-blue)' }}>
@@ -228,6 +309,13 @@ export const MaintenanceResolutionPage: React.FC = () => {
                     <p style={{ margin: 0, fontSize: '0.84rem', color: '#334155', lineHeight: 1.4 }}>
                       {t.description}
                     </p>
+
+                    {/* AI Summary and Urgency (Section 10) */}
+                    {(t.aiSummary || t.aiSuggestedAction) && (
+                      <div style={{ fontSize: '0.76rem', color: '#78350f', background: '#fefce8', border: '1px solid #fef08a', padding: '6px 8px', borderRadius: '6px' }}>
+                        <strong>AI:</strong> {t.aiSummary || t.aiSuggestedAction}
+                      </div>
+                    )}
 
                     <div style={{ fontSize: '0.72rem', color: 'var(--neutral-muted)', marginTop: '4px' }}>
                       Reported by {t.residentName} • {new Date(t.createdAt).toLocaleDateString()}
@@ -336,18 +424,25 @@ export const MaintenanceResolutionPage: React.FC = () => {
                       <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--neutral-dark)' }}>
                         #{t.id}
                       </span>
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: 700,
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          background: '#dbeafe',
-                          color: '#1d4ed8'
-                        }}
-                      >
-                        In Progress
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {t.aiClassified && (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <Sparkles size={10} color="#d97706" /> AI Classified
+                          </span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: '#dbeafe',
+                            color: '#1d4ed8'
+                          }}
+                        >
+                          In Progress
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--brand-blue)' }}>
@@ -357,6 +452,13 @@ export const MaintenanceResolutionPage: React.FC = () => {
                     <p style={{ margin: 0, fontSize: '0.84rem', color: '#334155', lineHeight: 1.4 }}>
                       {t.description}
                     </p>
+
+                    {/* AI Summary (Section 10) */}
+                    {(t.aiSummary || t.aiSuggestedAction) && (
+                      <div style={{ fontSize: '0.76rem', color: '#78350f', background: '#fefce8', border: '1px solid #fef08a', padding: '6px 8px', borderRadius: '6px' }}>
+                        <strong>AI:</strong> {t.aiSummary || t.aiSuggestedAction}
+                      </div>
+                    )}
 
                     {t.wardenNotes && (
                       <div style={{ fontSize: '0.74rem', color: '#1e40af', background: '#eff6ff', padding: '6px 8px', borderRadius: '6px' }}>
@@ -469,18 +571,25 @@ export const MaintenanceResolutionPage: React.FC = () => {
                       <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--neutral-dark)' }}>
                         #{t.id}
                       </span>
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: 700,
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          background: '#dcfce7',
-                          color: '#15803d'
-                        }}
-                      >
-                        ✓ Resolved
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {t.aiClassified && (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <Sparkles size={10} color="#d97706" /> AI Classified
+                          </span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: '#dcfce7',
+                            color: '#15803d'
+                          }}
+                        >
+                          ✓ Resolved
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#16a34a' }}>
@@ -490,6 +599,12 @@ export const MaintenanceResolutionPage: React.FC = () => {
                     <p style={{ margin: 0, fontSize: '0.84rem', color: '#475569', lineHeight: 1.4 }}>
                       {t.description}
                     </p>
+
+                    {(t.aiSummary || t.aiSuggestedAction) && (
+                      <div style={{ fontSize: '0.74rem', color: '#78350f', background: '#fefce8', border: '1px solid #fef08a', padding: '4px 8px', borderRadius: '6px' }}>
+                        <strong>AI:</strong> {t.aiSummary || t.aiSuggestedAction}
+                      </div>
+                    )}
 
                     {t.wardenNotes && (
                       <div style={{ fontSize: '0.76rem', color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 8px', borderRadius: '6px' }}>
@@ -590,7 +705,7 @@ export const MaintenanceResolutionPage: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', marginBottom: '18px', fontSize: '0.84rem' }}>
+            <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', marginBottom: '16px', fontSize: '0.84rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                 <div><strong>Resident:</strong> {activeTicket.residentName}</div>
                 <div><strong>Room:</strong> {activeTicket.block} - {activeTicket.room}</div>
@@ -599,6 +714,46 @@ export const MaintenanceResolutionPage: React.FC = () => {
                 <strong>Issue Description:</strong> {activeTicket.description}
               </div>
             </div>
+
+            {/* AI Triage Card in Modal */}
+            {activeTicket.aiClassified && (
+              <div
+                style={{
+                  background: '#fefce8',
+                  border: '1px solid #fef08a',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  marginBottom: '16px',
+                  fontSize: '0.82rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, color: '#854d0e' }}>
+                    <Sparkles size={14} color="#d97706" /> Smart Maintenance AI Triage
+                  </div>
+                  {activeTicket.aiConfidence && (
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b45309', background: '#fef3c7', padding: '1px 6px', borderRadius: '4px' }}>
+                      {activeTicket.aiConfidence}% confidence
+                    </span>
+                  )}
+                </div>
+                {activeTicket.aiSummary && (
+                  <div style={{ color: '#713f12', marginBottom: '4px' }}>
+                    <strong>Summary:</strong> {activeTicket.aiSummary}
+                  </div>
+                )}
+                {activeTicket.aiSuggestedAction && (
+                  <div style={{ color: '#713f12', marginBottom: '4px' }}>
+                    <strong>Recommended Action:</strong> {activeTicket.aiSuggestedAction}
+                  </div>
+                )}
+                {activeTicket.aiReasoning && (
+                  <div style={{ color: '#854d0e', fontSize: '0.76rem', fontStyle: 'italic', marginTop: '4px', borderTop: '1px dashed #fde047', paddingTop: '4px' }}>
+                    <strong>Why this classification?</strong> {activeTicket.aiReasoning}
+                  </div>
+                )}
+              </div>
+            )}
 
             <form onSubmit={handleApplyUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>

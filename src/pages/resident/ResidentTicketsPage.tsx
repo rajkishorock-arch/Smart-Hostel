@@ -12,7 +12,8 @@ import {
   AlertCircle,
   FileText,
   ShieldCheck,
-  Search
+  Search,
+  Sparkles
 } from 'lucide-react';
 
 export const ResidentTicketsPage: React.FC = () => {
@@ -240,6 +241,23 @@ export const ResidentTicketsPage: React.FC = () => {
                   >
                     {t.priority} Priority
                   </span>
+                  {t.aiClassified && (
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: '#fef3c7',
+                        color: '#92400e',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px'
+                      }}
+                    >
+                      <Sparkles size={11} color="#d97706" /> AI Classified
+                    </span>
+                  )}
                 </div>
 
                 <span
@@ -261,6 +279,26 @@ export const ResidentTicketsPage: React.FC = () => {
               <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--neutral-dark)', margin: '0 0 10px 0', lineHeight: 1.5 }}>
                 {t.description}
               </h2>
+
+              {(t.aiSummary || t.aiSuggestedAction) && (
+                <div
+                  style={{
+                    background: '#fefce8',
+                    border: '1px solid #fef08a',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    margin: '10px 0',
+                    fontSize: '0.82rem',
+                    color: '#713f12'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 800, color: '#854d0e', marginBottom: '3px' }}>
+                    <Sparkles size={12} color="#d97706" /> AI Triage Assessment
+                  </div>
+                  {t.aiSummary && <div><strong>Summary:</strong> {t.aiSummary}</div>}
+                  {t.aiSuggestedAction && <div style={{ marginTop: '2px', color: '#854d0e' }}><strong>Action:</strong> {t.aiSuggestedAction}</div>}
+                </div>
+              )}
 
               {t.wardenNotes && (
                 <div

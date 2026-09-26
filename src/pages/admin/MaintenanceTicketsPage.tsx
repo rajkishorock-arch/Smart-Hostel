@@ -12,7 +12,8 @@ import {
   Clock,
   ArrowRight,
   Eye,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 
 export const MaintenanceTicketsPage: React.FC = () => {
@@ -235,9 +236,16 @@ export const MaintenanceTicketsPage: React.FC = () => {
                     {t.description}
                   </td>
                   <td>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: '#f1f5f9' }}>
-                      {t.category}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: '#f1f5f9' }}>
+                        {t.category}
+                      </span>
+                      {t.aiClassified && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <Sparkles size={10} color="#d97706" /> AI
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span
@@ -398,6 +406,36 @@ export const MaintenanceTicketsPage: React.FC = () => {
                   {selectedTicket.description}
                 </div>
               </div>
+
+              {selectedTicket.aiClassified && (
+                <div style={{ background: '#fefce8', border: '1px solid #fef08a', borderRadius: '10px', padding: '12px 14px', fontSize: '0.82rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, color: '#854d0e' }}>
+                      <Sparkles size={14} color="#d97706" /> Smart Maintenance AI Triage
+                    </div>
+                    {selectedTicket.aiConfidence && (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b45309', background: '#fef3c7', padding: '1px 6px', borderRadius: '4px' }}>
+                        {selectedTicket.aiConfidence}% confidence
+                      </span>
+                    )}
+                  </div>
+                  {selectedTicket.aiSummary && (
+                    <div style={{ color: '#713f12', marginBottom: '4px' }}>
+                      <strong>Summary:</strong> {selectedTicket.aiSummary}
+                    </div>
+                  )}
+                  {selectedTicket.aiSuggestedAction && (
+                    <div style={{ color: '#713f12', marginBottom: '4px' }}>
+                      <strong>Recommended Action:</strong> {selectedTicket.aiSuggestedAction}
+                    </div>
+                  )}
+                  {selectedTicket.aiReasoning && (
+                    <div style={{ color: '#854d0e', fontSize: '0.76rem', fontStyle: 'italic', marginTop: '4px', borderTop: '1px dashed #fde047', paddingTop: '4px' }}>
+                      <strong>Why this classification?</strong> {selectedTicket.aiReasoning}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {selectedTicket.wardenNotes && (
                 <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid var(--neutral-border)' }}>
