@@ -5,9 +5,9 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 // Read Firebase configuration from Vite environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoSmartHostelKey2026ValidMock',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'smart-hostel-admin.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'smart-hostel-admin',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'smart-hostel-admin.appspot.com',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'smart-hostel-and-mess.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'smart-hostel-and-mess',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'smart-hostel-and-mess.appspot.com',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '829102938475',
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:829102938475:web:7f6a9c1e2b3d4e5f'
 };

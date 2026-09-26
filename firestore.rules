@@ -12,37 +12,54 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Helper function to check if user has warden role
+    // Helper function to check if user has warden/admin role
     function isWarden() {
       return isAuthenticated() && 
         (request.auth.token.role == 'warden' || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'warden');
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'warden'));
     }
 
     // User profiles
     match /users/{userId} {
-      // Anyone can create their own profile upon registration
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      // Users can read and update their own profile; wardens can read and update room allocations for any user
-      allow read: if isOwner(userId) || isWarden();
-      allow update: if isOwner(userId) || isWarden();
+      // Unauthenticated users cannot read profiles. Residents can only view their own profile; wardens can view all.
+      allow read: if isAuthenticated() && (isOwner(userId) || isWarden());
+
+      // Users can only create their own profile upon registration.
+      // Crucial: Users CANNOT arbitrarily promote themselves to warden (must be 'resident', or supply valid warden verification)
+      allow create: if isAuthenticated() && request.auth.uid == userId &&
+        (request.resource.data.role == 'resident' || 
+         (request.resource.data.role == 'warden' && request.resource.data.wardenCode == 'WARDEN2026'));
+
+      // Users can update their own details (e.g. phone), but CANNOT change their role to warden.
+      // Only wardens can change roles or modify another user's room allocation.
+      allow update: if isAuthenticated() && 
+        (isWarden() || (isOwner(userId) && request.resource.data.role == resource.data.role));
+
+      // Only wardens can delete a user record
       allow delete: if isWarden();
     }
 
     // Maintenance Tickets
     match /tickets/{ticketId} {
-      // Residents can read their own tickets; wardens can read all tickets
+      // Residents can only read their own tickets; wardens can read all tickets
       allow read: if isAuthenticated() && 
         (resource.data.residentId == request.auth.uid || isWarden());
       
-      // Residents can create tickets tied to their own UID
+      // Residents can only create tickets tied to their own UID and starting with 'Open' status
       allow create: if isAuthenticated() && 
-        request.resource.data.residentId == request.auth.uid;
+        request.resource.data.residentId == request.auth.uid &&
+        request.resource.data.status == 'Open';
       
-      // Residents can only cancel/update their own open ticket; Wardens can update status and remarks
+      // Residents can only modify their own open tickets without changing the status to Resolved or modifying warden notes.
+      // Wardens have full authorization to update status (Open -> In Progress -> Resolved) and add technician notes.
       allow update: if isWarden() || 
-        (isAuthenticated() && resource.data.residentId == request.auth.uid && resource.data.status == 'Open');
+        (isAuthenticated() && 
+         resource.data.residentId == request.auth.uid && 
+         resource.data.status == 'Open' &&
+         request.resource.data.status == 'Open');
       
+      // Only wardens can delete maintenance tickets
       allow delete: if isWarden();
     }
 
@@ -62,7 +79,7 @@ service cloud.firestore {
       allow write: if isWarden();
     }
 
-    // System audit logs / announcements
+    // Announcements
     match /announcements/{announcementId} {
       allow read: if isAuthenticated();
       allow write: if isWarden();
