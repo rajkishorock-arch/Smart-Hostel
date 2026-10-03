@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { ParticleWave } from '../common/ParticleWave';
 import {
   Building2,
   Utensils,
@@ -11,168 +12,228 @@ import {
   CheckCircle2,
   DoorOpen,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  QrCode,
+  Clock,
+  Sparkles,
+  Activity,
+  Layers,
+  ChevronRight
 } from 'lucide-react';
 
 export const Hero: React.FC = () => {
   const { isAuthenticated, isWarden, quickDemoLogin } = useAuth();
+  const [activeTab, setActiveTab] = useState<'rooms' | 'mess' | 'tickets' | 'gatepass'>('rooms');
 
   return (
     <section
       style={{
         position: 'relative',
-        background: '#ffffff',
-        borderBottom: '1px solid var(--border-subtle)',
-        paddingTop: '64px',
-        paddingBottom: '80px',
-        overflow: 'hidden'
+        background: '#030712',
+        borderBottom: '1px solid rgba(0, 191, 251, 0.2)',
+        paddingTop: '72px',
+        paddingBottom: '96px',
+        overflow: 'hidden',
+        minHeight: '85vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
       }}
     >
-      <div className="container">
-        {/* Top Domain Badge */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+      {/* 3D Undulating Particle Wave Background Canvas (Jarvis & GEC-IoT style) */}
+      <ParticleWave opacity={0.8} />
+
+      {/* Cyberpunk Radial Spotlight */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '-10%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '800px',
+          height: '500px',
+          background: 'radial-gradient(ellipse at center, rgba(0, 191, 251, 0.16) 0%, rgba(30, 58, 138, 0.08) 50%, transparent 75%)',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}
+      />
+
+      <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+        {/* Top Node Status Pill */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '22px' }}>
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '6px 14px',
-              background: '#f8fafc',
+              gap: '10px',
+              padding: '6px 16px',
+              background: 'rgba(15, 23, 42, 0.8)',
               borderRadius: '9999px',
-              border: '1px solid #e2e8f0',
-              fontSize: '0.825rem',
+              border: '1px solid rgba(0, 191, 251, 0.35)',
+              boxShadow: '0 0 15px rgba(0, 191, 251, 0.2)',
+              fontSize: '0.8rem',
               fontWeight: 700,
-              color: '#1e3a8a'
+              color: '#00BFFB',
+              letterSpacing: '0.06em'
             }}
           >
-            <Building2 size={16} color="#1e3a8a" />
-            <span>SMART HOSTEL &amp; MESS ADMINISTRATION</span>
             <span
               style={{
-                background: '#1e3a8a',
-                color: '#ffffff',
-                padding: '2px 8px',
-                borderRadius: '9999px',
-                fontSize: '0.7rem'
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#00BFFB',
+                boxShadow: '0 0 8px #00BFFB'
               }}
-            >
-              Unified System
-            </span>
+              className="pulse-indicator"
+            />
+            <span>RESIDENTIAL NODE // AUTONOMOUS OS v2.6 ONLINE</span>
           </div>
         </div>
 
         {/* Hero Title & Supporting Text */}
-        <div style={{ textAlign: 'center', maxWidth: '820px', margin: '0 auto 36px auto' }}>
+        <div style={{ textAlign: 'center', maxWidth: '880px', margin: '0 auto 40px auto' }}>
           <h1
-            className="font-display"
             style={{
-              fontSize: 'clamp(2.1rem, 4.8vw, 3.4rem)',
-              fontWeight: 800,
-              lineHeight: 1.18,
-              letterSpacing: '-0.025em',
-              color: '#0f172a',
-              marginBottom: '20px'
+              fontSize: 'clamp(2.4rem, 5.5vw, 4.2rem)',
+              fontWeight: 900,
+              lineHeight: 1.12,
+              letterSpacing: '-0.03em',
+              color: '#ffffff',
+              marginBottom: '24px',
+              textShadow: '0 2px 20px rgba(0,0,0,0.8)'
             }}
           >
-            One place to manage hostel rooms, meals and maintenance.
+            Next-Gen Living.{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #00BFFB 0%, #38bdf8 50%, #818cf8 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'inline-block'
+              }}
+              className="text-glow-cyan"
+            >
+              Powered by Autonomous Intelligence.
+            </span>
           </h1>
 
           <p
             style={{
-              fontSize: 'clamp(1rem, 2vw, 1.15rem)',
-              color: '#475569',
+              fontSize: 'clamp(1rem, 2.2vw, 1.2rem)',
+              color: '#94a3b8',
               lineHeight: 1.65,
-              marginBottom: '32px',
-              maxWidth: '720px',
-              margin: '0 auto 32px auto'
+              marginBottom: '36px',
+              maxWidth: '740px',
+              margin: '0 auto 36px auto'
             }}
           >
-            The centralized operations portal for college residential halls. Streamlines digital room and bed
-            allocation for students, publishes live 7-day mess menus, and routes maintenance requests with smart
-            classification directly to warden administration.
+            The unified residential management system for collegiate halls. Featuring real-time digital room allocation, 7-day automated mess nutrition, AI ticket classification, digital QR gate-passes, and curfew roll call.
           </p>
 
-          {/* Call to Actions */}
+          {/* Glowing Call to Actions */}
           <div
             style={{
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px',
-              marginBottom: '32px'
+              gap: '14px',
+              marginBottom: '36px'
             }}
           >
             {isAuthenticated ? (
               <Link
                 to={isWarden ? '/admin/dashboard' : '/dashboard'}
-                className="btn btn-primary btn-lg"
-                style={{ background: '#1e3a8a', borderColor: '#1e3a8a' }}
+                className="cyber-btn-cyan"
+                style={{
+                  padding: '14px 32px',
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '1rem'
+                }}
               >
-                <span>Go to My Dashboard</span>
+                <span>Enter Operational Console</span>
                 <ArrowRight size={18} />
               </Link>
             ) : (
               <>
                 <Link
                   to="/register"
-                  className="btn btn-primary btn-lg"
-                  style={{ background: '#1e3a8a', borderColor: '#1e3a8a' }}
+                  className="cyber-btn-cyan"
+                  style={{
+                    padding: '14px 30px',
+                    borderRadius: '12px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '1rem'
+                  }}
                 >
-                  <span>Get Started</span>
+                  <span>Student Registration</span>
                   <ArrowRight size={18} />
                 </Link>
 
-                <a
-                  href="#hostel"
-                  className="btn btn-secondary btn-lg"
-                  style={{ background: '#ffffff', borderColor: '#cbd5e1', color: '#1e293b' }}
+                <Link
+                  to="/login"
+                  className="cyber-btn-outline"
+                  style={{
+                    padding: '14px 28px',
+                    borderRadius: '12px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '1rem'
+                  }}
                 >
-                  <span>Explore Features</span>
-                </a>
+                  <span>Portal Login</span>
+                  <ChevronRight size={18} />
+                </Link>
               </>
             )}
 
-            {/* Quick Demo Access Buttons for Evaluators (competition deployment) */}
-            {import.meta.env.VITE_DEMO_MODE !== 'false' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  id="hero-demo-resident-btn"
-                  onClick={() => quickDemoLogin('resident')}
-                  className="btn btn-outline"
-                  style={{
-                    background: '#f8fafc',
-                    color: '#1e293b',
-                    fontSize: '0.85rem',
-                    padding: '9px 14px',
-                    borderColor: '#cbd5e1'
-                  }}
-                  title="Instant access as Demo Resident"
-                >
-                  <Zap size={14} color="#d97706" />
-                  <span>Demo Resident</span>
-                </button>
-                <button
-                  id="hero-demo-warden-btn"
-                  onClick={() => quickDemoLogin('warden')}
-                  className="btn btn-outline"
-                  style={{
-                    background: '#f8fafc',
-                    color: '#1e293b',
-                    fontSize: '0.85rem',
-                    padding: '9px 14px',
-                    borderColor: '#cbd5e1'
-                  }}
-                  title="Instant access as Demo Warden"
-                >
-                  <ShieldCheck size={14} color="#059669" />
-                  <span>Demo Warden</span>
-                </button>
-              </div>
-            )}
+            {/* Quick 1-Click Competition / Evaluator Access */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                id="hero-demo-resident-btn"
+                onClick={() => quickDemoLogin('resident')}
+                className="cyber-btn-outline"
+                style={{
+                  padding: '11px 16px',
+                  borderRadius: '10px',
+                  fontSize: '0.85rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Instant access as Rahul Sharma (Room 204)"
+              >
+                <Zap size={15} color="#00BFFB" />
+                <span>Demo Student</span>
+              </button>
+              <button
+                id="hero-demo-warden-btn"
+                onClick={() => quickDemoLogin('warden')}
+                className="cyber-btn-outline"
+                style={{
+                  padding: '11px 16px',
+                  borderRadius: '10px',
+                  fontSize: '0.85rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Instant access as Chief Warden Dr. R. K. Verma"
+              >
+                <ShieldCheck size={15} color="#38bdf8" />
+                <span>Demo Warden</span>
+              </button>
+            </div>
           </div>
 
-          {/* Domain Badges Bar */}
+          {/* Quick HUD Metrics Ribbon */}
           <div
             style={{
               display: 'flex',
@@ -184,290 +245,412 @@ export const Hero: React.FC = () => {
               color: '#64748b'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={16} color="#2563eb" />
-              <span>Digital Room &amp; Bed Registry</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1' }}>
+              <CheckCircle2 size={16} color="#00BFFB" />
+              <span>Real-Time Bed Registry</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={16} color="#059669" />
-              <span>Active 7-Day Mess Timetable</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1' }}>
+              <CheckCircle2 size={16} color="#00BFFB" />
+              <span>Live 7-Day Dining Schedule</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={16} color="#d97706" />
-              <span>Smart Maintenance Classification</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1' }}>
+              <CheckCircle2 size={16} color="#00BFFB" />
+              <span>AI Triage &amp; SLA Tracking</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1' }}>
+              <CheckCircle2 size={16} color="#00BFFB" />
+              <span>Digital Gate-Pass &amp; Curfew</span>
             </div>
           </div>
         </div>
 
-        {/* Coherent Product Illustration Composition (Hero Visual Showcase) */}
+        {/* Futuristic Cyber Deck Console Showcase */}
         <div
+          className="glass-card"
           style={{
-            maxWidth: '1080px',
+            maxWidth: '1100px',
             margin: '0 auto',
-            background: '#f8fafc',
-            border: '1.5px solid #e2e8f0',
-            borderRadius: '20px',
-            padding: '32px 24px',
-            boxShadow: 'var(--shadow-md)',
-            position: 'relative'
+            padding: '28px',
+            border: '1px solid rgba(0, 191, 251, 0.25)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 191, 251, 0.15)'
           }}
         >
-          {/* Hostel Building & Administration Overview Header */}
+          {/* Deck Header */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid #e2e8f0',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
               paddingBottom: '20px',
               marginBottom: '24px',
               flexWrap: 'wrap',
-              gap: '12px'
+              gap: '16px'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
+                  width: '46px',
+                  height: '46px',
                   borderRadius: '12px',
-                  background: '#eff6ff',
-                  border: '1px solid #bfdbfe',
+                  background: 'rgba(0, 191, 251, 0.1)',
+                  border: '1px solid rgba(0, 191, 251, 0.4)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#1e3a8a'
+                  color: '#00BFFB',
+                  boxShadow: '0 0 15px rgba(0, 191, 251, 0.25)'
                 }}
               >
                 <Building2 size={24} />
               </div>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                    Aravali Residence Hall • Operational Console
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                    Aravali Residence Hall • Operational HUD
                   </h3>
+                  <span
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                      color: '#34d399',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700
+                    }}
+                  >
+                    SYSTEM NOMINAL
+                  </span>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                  Unified Operations: Block A &amp; B • Dining Wing • Maintenance Hub
+                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  Block A, Floor 1-3 • Automated Synchronization Enabled
                 </span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '9999px',
-                  background: '#ecfdf5',
-                  border: '1px solid #a7f3d0',
-                  color: '#065f46',
-                  fontSize: '0.78rem',
-                  fontWeight: 700
-                }}
-              >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }} />
-                System Active
-              </span>
+            {/* Interactive Module Selector Tabs */}
+            <div
+              style={{
+                display: 'flex',
+                background: 'rgba(15, 23, 42, 0.8)',
+                padding: '4px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                gap: '4px'
+              }}
+            >
+              {[
+                { id: 'rooms', label: 'Beds & Rooms', icon: DoorOpen },
+                { id: 'mess', label: 'Mess Nutrition', icon: Utensils },
+                { id: 'tickets', label: 'AI Maintenance', icon: Wrench },
+                { id: 'gatepass', label: 'Gate Pass & Leaves', icon: QrCode }
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isSelected = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      color: isSelected ? '#00BFFB' : '#94a3b8',
+                      background: isSelected ? 'rgba(0, 191, 251, 0.15)' : 'transparent',
+                      border: isSelected ? '1px solid rgba(0, 191, 251, 0.3)' : '1px solid transparent',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Icon size={14} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Staggered Composition Cards: Room Allocation -> Today's Mess -> Maintenance */}
+          {/* Quick HUD Metrics Bar */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '20px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+              gap: '16px',
+              marginBottom: '24px'
             }}
           >
-            {/* 1. Room Allocation Card */}
             <div
               style={{
-                background: '#ffffff',
-                border: '1.5px solid #e2e8f0',
-                borderTop: '4px solid #1e3a8a',
-                borderRadius: '14px',
-                padding: '20px',
-                boxShadow: 'var(--shadow-xs)'
+                background: 'rgba(15, 23, 42, 0.6)',
+                border: '1px solid rgba(0, 191, 251, 0.2)',
+                borderRadius: '12px',
+                padding: '16px'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      background: '#eff6ff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#1e3a8a'
-                    }}
-                  >
-                    <DoorOpen size={18} />
-                  </div>
-                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
-                    Room Allocation
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    background: '#f1f5f9',
-                    color: '#475569'
-                  }}
-                >
-                  Live Roster
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  Bed Allocation
                 </span>
+                <DoorOpen size={16} color="#00BFFB" />
               </div>
-
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem' }}>Room 204</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '1px 8px', borderRadius: '9999px' }}>
-                    Occupied
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#475569' }}>
-                  Block A • Floor 2 • Bed 2
-                </div>
-              </div>
-
-              <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
-                <span>Total Block Capacity:</span>
-                <strong style={{ color: '#0f172a' }}>92% Occupied</strong>
-              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff' }}>46 / 50 Beds</div>
+              <div style={{ fontSize: '0.75rem', color: '#38bdf8', marginTop: '4px' }}>92.0% Occupancy Rate</div>
             </div>
 
-            {/* 2. Today's Mess Schedule Card */}
             <div
               style={{
-                background: '#ffffff',
-                border: '1.5px solid #e2e8f0',
-                borderTop: '4px solid #059669',
-                borderRadius: '14px',
-                padding: '20px',
-                boxShadow: 'var(--shadow-xs)'
+                background: 'rgba(15, 23, 42, 0.6)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: '12px',
+                padding: '16px'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      background: '#ecfdf5',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#059669'
-                    }}
-                  >
-                    <Utensils size={18} />
-                  </div>
-                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
-                    Today&apos;s Mess
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    background: '#ecfdf5',
-                    color: '#065f46'
-                  }}
-                >
-                  Lunch Active
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  Mess Meals Served
                 </span>
+                <Utensils size={16} color="#34d399" />
               </div>
-
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>Shahi Paneer Thali</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>12:30 – 2:00 PM</span>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#475569' }}>
-                  Dal Tadka, Hot Roti, Steamed Rice, Raita
-                </div>
-              </div>
-
-              <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
-                <span>Next Meal:</span>
-                <strong style={{ color: '#0f172a' }}>Snacks @ 4:30 PM</strong>
-              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff' }}>138 / 150 Today</div>
+              <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '4px' }}>Lunch Active: Special Paneer</div>
             </div>
 
-            {/* 3. Maintenance Status Card */}
             <div
               style={{
-                background: '#ffffff',
-                border: '1.5px solid #e2e8f0',
-                borderTop: '4px solid #d97706',
-                borderRadius: '14px',
-                padding: '20px',
-                boxShadow: 'var(--shadow-xs)'
+                background: 'rgba(15, 23, 42, 0.6)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                borderRadius: '12px',
+                padding: '16px'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  AI Maintenance SLA
+                </span>
+                <Wrench size={16} color="#fbbf24" />
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff' }}>98.4% On-Time</div>
+              <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginTop: '4px' }}>Avg Resolution: 2.4 Hours</div>
+            </div>
+
+            <div
+              style={{
+                background: 'rgba(15, 23, 42, 0.6)',
+                border: '1px solid rgba(168, 85, 247, 0.2)',
+                borderRadius: '12px',
+                padding: '16px'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  Gate Pass &amp; Curfew
+                </span>
+                <QrCode size={16} color="#c084fc" />
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff' }}>0 Out-of-Campus</div>
+              <div style={{ fontSize: '0.75rem', color: '#c084fc', marginTop: '4px' }}>Curfew: 10:00 PM Roll Call</div>
+            </div>
+          </div>
+
+          {/* Interactive Active Tab Content */}
+          <div
+            style={{
+              background: 'rgba(8, 12, 24, 0.7)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '14px',
+              padding: '20px'
+            }}
+          >
+            {activeTab === 'rooms' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0' }}>
+                    Floor 2 • Aravali Hall Bed Matrix (Real-Time Live Status)
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#00BFFB' }}>Active Node: Room 204 Allocated to Rahul Sharma</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  {[
+                    { room: '201', type: 'Triple Bed', occupied: 3, capacity: 3, status: 'Full', color: '#ef4444' },
+                    { room: '202', type: 'Double Bed', occupied: 2, capacity: 2, status: 'Full', color: '#ef4444' },
+                    { room: '203', type: 'Double Bed', occupied: 2, capacity: 2, status: 'Full', color: '#ef4444' },
+                    { room: '204', type: 'Double Bed', occupied: 2, capacity: 2, status: 'Demo Resident', color: '#00BFFB' },
+                    { room: '205', type: 'Single Bed', occupied: 0, capacity: 1, status: '1 Vacant Bed', color: '#10b981' }
+                  ].map((r, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        border: `1px solid ${r.color === '#00BFFB' ? 'rgba(0, 191, 251, 0.6)' : 'rgba(255,255,255,0.08)'}`,
+                        borderRadius: '10px',
+                        padding: '12px',
+                        boxShadow: r.color === '#00BFFB' ? '0 0 15px rgba(0, 191, 251, 0.25)' : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>Room {r.room}</span>
+                        <span style={{ fontSize: '0.7rem', color: r.color, fontWeight: 700 }}>{r.status}</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{r.type}</div>
+                      <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
+                        {Array.from({ length: r.capacity }).map((_, bi) => (
+                          <div
+                            key={bi}
+                            style={{
+                              flex: 1,
+                              height: '4px',
+                              borderRadius: '2px',
+                              background: bi < r.occupied ? r.color : 'rgba(255,255,255,0.1)'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'mess' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0' }}>
+                    Today's 4-Meal Dining Schedule (Calorie &amp; Dietary Sync)
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#34d399' }}>Live Meal: Lunch in Progress</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                  {[
+                    { meal: 'Breakfast', time: '07:30 - 09:30 AM', items: 'Masala Dosa, Sambar, Coconut Chutney, Banana, Tea/Coffee', cal: '520 kcal' },
+                    { meal: 'Lunch', time: '12:30 - 02:30 PM', items: 'Paneer Makhani, Dal Tadka, Jeera Rice, Phulka, Boondi Raita', cal: '780 kcal', active: true },
+                    { meal: 'Evening Snacks', time: '05:00 - 06:00 PM', items: 'Vegetable Samosa, Green Chutney, Hot Masala Tea', cal: '310 kcal' },
+                    { meal: 'Dinner', time: '07:30 - 09:30 PM', items: 'Mixed Veg Curry, Chapati, Steamed Rice, Yellow Dal, Gulab Jamun', cal: '690 kcal' }
+                  ].map((m, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        border: m.active ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '10px',
+                        padding: '12px',
+                        boxShadow: m.active ? '0 0 15px rgba(16, 185, 129, 0.2)' : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9rem' }}>{m.meal}</span>
+                        {m.active && (
+                          <span style={{ fontSize: '0.68rem', background: 'rgba(16,185,129,0.2)', color: '#34d399', padding: '2px 6px', borderRadius: '4px' }}>
+                            SERVING NOW
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '6px' }}>{m.time}</div>
+                      <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: 0, lineHeight: 1.4 }}>{m.items}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'tickets' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0' }}>
+                    AI Ticket Dispatch &amp; Priority Triage Engine
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#fbbf24' }}>Real-Time Classifier Confidence: 99.2%</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { id: 'TKT-101', room: 'Room 204', category: 'Electrical', desc: 'Ceiling fan regulator sparking and speed switch stuck on high', priority: 'High', status: 'Assigned to Electrician' },
+                    { id: 'TKT-102', room: 'Room 102', category: 'Plumbing', desc: 'Washbasin faucet loose and leaking slow drip underneath', priority: 'Medium', status: 'In Progress' },
+                    { id: 'TKT-103', room: 'Room 305', category: 'Carpentry', desc: 'Study table drawer slider stuck and cannot open smoothly', priority: 'Low', status: 'Scheduled' }
+                  ].map((t, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '10px',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        flexWrap: 'wrap'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontWeight: 800, color: '#00BFFB', fontSize: '0.85rem' }}>{t.id}</span>
+                        <div>
+                          <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.85rem' }}>{t.room} • {t.category}</span>
+                          <p style={{ fontSize: '0.76rem', color: '#94a3b8', margin: 0 }}>{t.desc}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.72rem', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                          {t.priority}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', background: 'rgba(0, 191, 251, 0.15)', color: '#00BFFB', padding: '3px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                          {t.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'gatepass' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0' }}>
+                    Digital Out-Pass &amp; Curfew Verification Node
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#c084fc' }}>Curfew Check-in: 10:00 PM</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      background: '#fef3c7',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#b45309'
+                      background: 'rgba(15, 23, 42, 0.7)',
+                      border: '1px solid rgba(168, 85, 247, 0.3)',
+                      borderRadius: '10px',
+                      padding: '14px'
                     }}
                   >
-                    <Wrench size={18} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <QrCode size={18} color="#c084fc" />
+                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.85rem' }}>Digital Outpass Generation</span>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                      Student requests emergency outpass or home leave. System checks parent phone authorization and issues cryptographically signed QR code for gate security.
+                    </p>
                   </div>
-                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
-                    Maintenance
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    background: '#eff6ff',
-                    color: '#1e3a8a'
-                  }}
-                >
-                  Ticket #TK-108
-                </span>
-              </div>
 
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>Room Fan Capacitor</span>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1e3a8a', background: '#dbeafe', padding: '1px 8px', borderRadius: '9999px' }}>
-                    In Progress
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#475569' }}>
-                  Trade: <strong>Electrical</strong> • Electrician Dispatched
+                  <div
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.7)',
+                      border: '1px solid rgba(0, 191, 251, 0.3)',
+                      borderRadius: '10px',
+                      padding: '14px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <Clock size={18} color="#00BFFB" />
+                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.85rem' }}>Night Curfew Attendance</span>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                      Warden tablet terminal for nightly roll-calls by floor/block. Instantly marks Present, Absent, or Authorized On-Leave with instant SMS alert to parents if absent.
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
-                <span>Classification:</span>
-                <strong style={{ color: '#d97706' }}>Smart Trade Match</strong>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

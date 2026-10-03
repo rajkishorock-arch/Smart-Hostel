@@ -13,7 +13,7 @@ import { ContactUs } from '../components/landing/ContactUs';
 
 export const LandingPage: React.FC = () => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#030712', color: '#f8fafc' }}>
       <Navbar />
       <main style={{ flexGrow: 1 }}>
         {/* 1. Hero */}

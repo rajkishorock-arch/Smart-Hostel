@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
+import { ParticleWave } from '../components/common/ParticleWave';
 import {
   Building2,
   ShieldCheck,
@@ -10,7 +11,10 @@ import {
   Mail,
   AlertCircle,
   ArrowRight,
-  Zap
+  Zap,
+  Eye,
+  EyeOff,
+  Sparkles
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -20,6 +24,7 @@ export const LoginPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>(initialRole);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [demoSubmitting, setDemoSubmitting] = useState<'resident' | 'warden' | null>(null);
@@ -57,7 +62,7 @@ export const LoginPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      setError(err.message || 'Authentication failed. Please verify credentials.');
     } finally {
       setSubmitting(false);
     }
@@ -84,64 +89,92 @@ export const LoginPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        background: '#f8fafc',
+        background: '#030712',
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        padding: '32px 16px'
+        padding: '32px 16px',
+        overflow: 'hidden'
       }}
     >
-      <div style={{ maxWidth: '440px', width: '100%', margin: '0 auto' }}>
+      {/* 3D Undulating Particle Wave in background */}
+      <ParticleWave opacity={0.65} />
+
+      {/* Radial Glow Spotlight */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '20%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '600px',
+          height: '400px',
+          background: 'radial-gradient(ellipse at center, rgba(0, 191, 251, 0.12) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}
+      />
+
+      <div style={{ maxWidth: '460px', width: '100%', margin: '0 auto', position: 'relative', zIndex: 2 }}>
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '12px', textDecoration: 'none' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '16px',
+              textDecoration: 'none'
+            }}
+          >
             <div
               style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                background: '#1e3a8a',
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #00BFFB 0%, #1e3a8a 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#ffffff',
-                boxShadow: '0 2px 6px rgba(30, 58, 138, 0.2)'
+                boxShadow: '0 0 20px rgba(0, 191, 251, 0.5)'
               }}
             >
-              <Building2 size={22} />
+              <Building2 size={24} />
             </div>
-            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
-              Smart<span style={{ color: '#2563eb' }}>Hostel</span> &amp; Mess
+            <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+              Smart<span style={{ color: '#00BFFB', textShadow: '0 0 14px rgba(0, 191, 251, 0.6)' }}>Hostel</span>
             </span>
           </Link>
-          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-            Sign In to Campus Portal
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+            Campus Living Portal Access
           </h1>
-          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
-            Official Residential &amp; Mess Management Station
+          <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '6px' }}>
+            Autonomous Residential Operations Station
           </p>
         </div>
 
-        {/* Login Card */}
+        {/* Glass Card */}
         <div
-          className="card"
+          className="glass-card"
           style={{
             padding: '32px',
-            background: '#ffffff',
-            borderRadius: '16px',
-            boxShadow: 'var(--shadow-md)',
-            border: '1.5px solid #e2e8f0'
+            border: '1px solid rgba(0, 191, 251, 0.25)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 191, 251, 0.12)'
           }}
         >
-          {/* Portal Selector Tabs */}
+          {/* Role Selector Tabs */}
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
-              background: '#f1f5f9',
+              background: 'rgba(15, 23, 42, 0.8)',
               padding: '4px',
               borderRadius: '10px',
-              marginBottom: '20px'
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              marginBottom: '22px'
             }}
           >
             <button
@@ -152,20 +185,19 @@ export const LoginPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                padding: '9px',
+                padding: '10px',
                 borderRadius: '8px',
                 fontSize: '0.85rem',
                 fontWeight: 700,
-                color: role === 'resident' ? '#1e3a8a' : '#64748b',
-                background: role === 'resident' ? '#ffffff' : 'transparent',
-                boxShadow: role === 'resident' ? 'var(--shadow-xs)' : 'none',
+                color: role === 'resident' ? '#00BFFB' : '#94a3b8',
+                background: role === 'resident' ? 'rgba(0, 191, 251, 0.15)' : 'transparent',
+                border: role === 'resident' ? '1px solid rgba(0, 191, 251, 0.3)' : '1px solid transparent',
                 transition: 'all 0.15s ease',
-                border: 'none',
                 cursor: 'pointer'
               }}
             >
               <User size={15} />
-              <span>Resident</span>
+              <span>Resident Student</span>
             </button>
 
             <button
@@ -176,36 +208,35 @@ export const LoginPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                padding: '9px',
+                padding: '10px',
                 borderRadius: '8px',
                 fontSize: '0.85rem',
                 fontWeight: 700,
-                color: role === 'warden' ? '#1e3a8a' : '#64748b',
-                background: role === 'warden' ? '#ffffff' : 'transparent',
-                boxShadow: role === 'warden' ? 'var(--shadow-xs)' : 'none',
+                color: role === 'warden' ? '#38bdf8' : '#94a3b8',
+                background: role === 'warden' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                border: role === 'warden' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent',
                 transition: 'all 0.15s ease',
-                border: 'none',
                 cursor: 'pointer'
               }}
             >
               <ShieldCheck size={15} />
-              <span>Warden Admin</span>
+              <span>Hostel Warden</span>
             </button>
           </div>
 
           {error && (
             <div
               style={{
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                color: '#b91c1c',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#fca5a5',
                 padding: '12px 14px',
                 borderRadius: '10px',
                 fontSize: '0.85rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                marginBottom: '18px'
+                marginBottom: '20px'
               }}
             >
               <AlertCircle size={18} style={{ flexShrink: 0 }} />
@@ -215,35 +246,51 @@ export const LoginPage: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px', display: 'block' }}>
-                {role === 'resident' ? 'Resident Student Email' : 'Warden Official Email'}
+            <div style={{ marginBottom: '16px' }}>
+              <label
+                style={{
+                  fontSize: '0.825rem',
+                  fontWeight: 700,
+                  color: '#e2e8f0',
+                  marginBottom: '6px',
+                  display: 'block'
+                }}
+              >
+                {role === 'resident' ? 'Student Email' : 'Warden Official Email'}
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail
                   size={16}
                   style={{
                     position: 'absolute',
-                    left: '12px',
+                    left: '14px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#94a3b8'
+                    color: '#64748b'
                   }}
                 />
                 <input
                   type="email"
                   required
-                  placeholder={role === 'resident' ? 'resident@campus.edu' : 'warden@campus.edu'}
-                  className="input-field"
-                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}
+                  placeholder={role === 'resident' ? 'student@campus.edu' : 'warden@campus.edu'}
+                  className="cyber-input"
+                  style={{ width: '100%', paddingLeft: '40px', boxSizing: 'border-box' }}
                   value={email}
                   onChange={handleEmailChange}
                 />
               </div>
             </div>
 
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px', display: 'block' }}>
+            <div style={{ marginBottom: '22px' }}>
+              <label
+                style={{
+                  fontSize: '0.825rem',
+                  fontWeight: 700,
+                  color: '#e2e8f0',
+                  marginBottom: '6px',
+                  display: 'block'
+                }}
+              >
                 Password
               </label>
               <div style={{ position: 'relative' }}>
@@ -251,71 +298,98 @@ export const LoginPage: React.FC = () => {
                   size={16}
                   style={{
                     position: 'absolute',
-                    left: '12px',
+                    left: '14px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#94a3b8'
+                    color: '#64748b'
                   }}
                 />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••"
-                  className="input-field"
-                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '42px', borderRadius: '8px', border: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}
+                  className="cyber-input"
+                  style={{ width: '100%', paddingLeft: '40px', paddingRight: '40px', boxSizing: 'border-box' }}
                   value={password}
                   onChange={handlePasswordChange}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#64748b',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={submitting || demoSubmitting !== null}
-              className="btn btn-primary"
+              className="cyber-btn-cyan"
               style={{
                 width: '100%',
-                height: '44px',
+                padding: '12px',
                 fontSize: '0.95rem',
-                background: '#1e3a8a',
-                borderColor: '#1e3a8a',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                fontWeight: 700,
-                color: '#ffffff',
-                borderRadius: '8px',
-                border: 'none',
+                borderRadius: '10px',
                 cursor: submitting ? 'not-allowed' : 'pointer'
               }}
             >
-              <span>{submitting ? 'Authenticating...' : 'Sign In to Portal'}</span>
+              <span>{submitting ? 'Authenticating Credentials...' : 'Authenticate & Enter'}</span>
               <ArrowRight size={16} />
             </button>
           </form>
 
-          {/* ============================================================ */}
-          {/* INSTANT DEMO ACCESS (FOR COMPETITION EVALUATORS)             */}
-          {/* ============================================================ */}
+          {/* Instant Demo Access (Evaluation Mode) */}
           {isDemoMode && (
-            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>
-                  INSTANT DEMO ACCESS
+            <div
+              style={{
+                marginTop: '24px',
+                paddingTop: '20px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '14px'
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    color: '#94a3b8',
+                    letterSpacing: '0.04em'
+                  }}
+                >
+                  INSTANT DEMO PROFILES
                 </span>
                 <span
                   style={{
                     fontSize: '0.7rem',
                     fontWeight: 700,
-                    color: '#059669',
-                    background: '#ecfdf5',
+                    color: '#00BFFB',
+                    background: 'rgba(0, 191, 251, 0.1)',
+                    border: '1px solid rgba(0, 191, 251, 0.3)',
                     padding: '2px 8px',
-                    borderRadius: '9999px',
-                    border: '1px solid #a7f3d0'
+                    borderRadius: '9999px'
                   }}
                 >
-                  ⚡ One-Click Login
+                  ⚡ One-Click Auth
                 </span>
               </div>
 
@@ -325,26 +399,20 @@ export const LoginPage: React.FC = () => {
                   type="button"
                   disabled={submitting || demoSubmitting !== null}
                   onClick={() => handleDemoLogin('resident')}
+                  className="cyber-btn-outline"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    padding: '12px 10px',
+                    padding: '11px 10px',
                     borderRadius: '8px',
-                    border: '1.5px solid #bfdbfe',
-                    background: '#eff6ff',
-                    color: '#1e3a8a',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    cursor: submitting || demoSubmitting !== null ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s ease'
+                    fontSize: '0.85rem',
+                    cursor: submitting || demoSubmitting !== null ? 'not-allowed' : 'pointer'
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#dbeafe')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '#eff6ff')}
                 >
-                  <User size={16} color="#2563eb" />
-                  <span>{demoSubmitting === 'resident' ? 'Entering...' : 'Demo Resident'}</span>
+                  <User size={15} color="#00BFFB" />
+                  <span>{demoSubmitting === 'resident' ? 'Entering...' : 'Demo Student'}</span>
                 </button>
 
                 <button
@@ -352,25 +420,19 @@ export const LoginPage: React.FC = () => {
                   type="button"
                   disabled={submitting || demoSubmitting !== null}
                   onClick={() => handleDemoLogin('warden')}
+                  className="cyber-btn-outline"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    padding: '12px 10px',
+                    padding: '11px 10px',
                     borderRadius: '8px',
-                    border: '1.5px solid #a7f3d0',
-                    background: '#ecfdf5',
-                    color: '#065f46',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    cursor: submitting || demoSubmitting !== null ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s ease'
+                    fontSize: '0.85rem',
+                    cursor: submitting || demoSubmitting !== null ? 'not-allowed' : 'pointer'
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#d1fae5')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '#ecfdf5')}
                 >
-                  <ShieldCheck size={16} color="#059669" />
+                  <ShieldCheck size={15} color="#38bdf8" />
                   <span>{demoSubmitting === 'warden' ? 'Entering...' : 'Demo Warden'}</span>
                 </button>
               </div>
@@ -378,18 +440,28 @@ export const LoginPage: React.FC = () => {
           )}
         </div>
 
-        {/* Footer links to register */}
-        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* Footer links */}
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: '22px',
+            fontSize: '0.85rem',
+            color: '#94a3b8',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}
+        >
           <div>
-            New student resident?{' '}
-            <Link to="/register" style={{ color: '#1e3a8a', fontWeight: 700, textDecoration: 'none' }}>
-              Register Room Profile
+            Need a student resident account?{' '}
+            <Link to="/register" style={{ color: '#00BFFB', fontWeight: 700, textDecoration: 'none' }}>
+              Register Profile →
             </Link>
           </div>
           <div style={{ fontSize: '0.8rem' }}>
-            Hostel Administrator?{' '}
-            <Link to="/warden/register" style={{ color: '#065f46', fontWeight: 700, textDecoration: 'none' }}>
-              Official Warden Onboarding →
+            Official Hostel Administrator?{' '}
+            <Link to="/warden/register" style={{ color: '#38bdf8', fontWeight: 700, textDecoration: 'none' }}>
+              Warden Node Onboarding →
             </Link>
           </div>
         </div>

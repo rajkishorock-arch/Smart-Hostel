@@ -2,6 +2,7 @@ export type UserRole = 'resident' | 'warden';
 
 export interface UserProfile {
   uid: string;
+  id?: string;
   email: string;
   name: string;
   role: UserRole;
@@ -13,6 +14,9 @@ export interface UserProfile {
   createdAt: string;
   status?: string;
   updatedAt?: string;
+  parentPhone?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
 }
 
 export type TicketCategory =
@@ -288,6 +292,63 @@ export interface StudentChurnRisk {
   riskLevel: 'High' | 'Medium' | 'Low';
   riskFactors: string[];
   recommendedIntervention: string;
+}
+
+export interface GatePassRequest {
+  id: string;
+  residentId: string;
+  residentName: string;
+  studentEmail?: string;
+  roomNumber: string;
+  bedNumber?: string;
+  block?: string;
+  leaveType?: 'Local Outing' | 'Home Visit' | 'Emergency' | 'Academic / Event' | string;
+  type?: 'day_pass' | 'weekend_leave' | 'emergency_leave' | 'vacation' | string;
+  destination?: string;
+  departureDate: string;
+  departureTime?: string;
+  expectedReturnDate: string;
+  expectedReturnTime?: string;
+  reason: string;
+  parentContact?: string;
+  parentPhone?: string;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Checked Out' | 'Completed' | 'pending' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  approvedBy?: string;
+  reviewRemarks?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface NightAttendanceRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  residentId: string;
+  residentName: string;
+  roomNumber: string;
+  bedNumber?: string;
+  block?: string;
+  status: 'Present' | 'Absent' | 'On Leave' | 'present' | 'absent' | 'on_leave' | 'late' | 'Late';
+  remarks?: string;
+  markedBy?: string;
+  timestamp?: string;
+}
+
+export interface RoomChangeRequest {
+  id: string;
+  residentId: string;
+  residentName: string;
+  studentEmail?: string;
+  currentRoom: string;
+  currentBlock?: string;
+  currentBed?: string;
+  requestedRoom?: string;
+  preferredBlock?: string;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'pending' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  reviewRemarks?: string;
+  createdAt: string;
 }
 
 

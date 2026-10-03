@@ -13,7 +13,10 @@ import {
   TicketCategory,
   Invoice,
   IoTSensorReading,
-  VendorRecord
+  VendorRecord,
+  GatePassRequest,
+  NightAttendanceRecord,
+  RoomChangeRequest
 } from '../types';
 import {
   DEMO_USERS,
@@ -219,6 +222,8 @@ export function subscribeResidents(callback: (residents: UserProfile[]) => void)
     window.removeEventListener(EVENT_RESIDENTS_CHANGED, handleLocal);
   };
 }
+
+export const subscribeUsers = subscribeResidents;
 
 // ----------------- TICKETS STORAGE & LIFECYCLE -----------------
 
@@ -1143,10 +1148,10 @@ const INVOICES_STORAGE_KEY = 'sh_invoices_v1';
 const INITIAL_INVOICES: Invoice[] = [
   {
     id: 'INV-2026-001',
-    studentUid: 'resident-demo-uid',
-    studentName: 'Aarav Sharma',
+    studentUid: 'res-demo',
+    studentName: 'Rahul Sharma',
     studentEmail: 'demo-resident@hostel.edu',
-    roomNumber: 'A-204',
+    roomNumber: '204',
     term: 'Spring Term 2026',
     roomFee: 6500,
     messFee: 4200,
@@ -1162,10 +1167,10 @@ const INITIAL_INVOICES: Invoice[] = [
   },
   {
     id: 'INV-2026-002',
-    studentUid: 'res-demo-2',
-    studentName: 'Rohan Deshmukh',
-    studentEmail: 'rohan.d@hostel.edu',
-    roomNumber: 'A-204',
+    studentUid: 'res-1',
+    studentName: 'Aarav Sharma',
+    studentEmail: 'aarav.sharma@hostel.edu',
+    roomNumber: '101',
     term: 'Spring Term 2026',
     roomFee: 6500,
     messFee: 4200,
@@ -1178,10 +1183,10 @@ const INITIAL_INVOICES: Invoice[] = [
   },
   {
     id: 'INV-2026-003',
-    studentUid: 'res-demo-3',
-    studentName: 'Priya Patel',
-    studentEmail: 'priya.p@hostel.edu',
-    roomNumber: 'B-101',
+    studentUid: 'res-3',
+    studentName: 'Kabir Mehta',
+    studentEmail: 'kabir.mehta@hostel.edu',
+    roomNumber: '204',
     term: 'Spring Term 2026',
     roomFee: 7500,
     messFee: 4200,
@@ -1191,6 +1196,25 @@ const INITIAL_INVOICES: Invoice[] = [
     status: 'Overdue',
     dueDate: '2026-03-20',
     createdAt: '2026-02-25T08:00:00Z'
+  },
+  {
+    id: 'INV-2026-004',
+    studentUid: 'res-4',
+    studentName: 'Dev Patel',
+    studentEmail: 'dev.patel@hostel.edu',
+    roomNumber: '305',
+    term: 'Spring Term 2026',
+    roomFee: 6500,
+    messFee: 4200,
+    amenitiesFee: 500,
+    totalAmount: 11200,
+    amountPaid: 11200,
+    status: 'Paid',
+    dueDate: '2026-03-31',
+    paidAt: '2026-03-12T14:30:00Z',
+    paymentMode: 'NetBanking',
+    transactionRef: 'NET/20260312/441289',
+    createdAt: '2026-03-01T08:00:00Z'
   }
 ];
 
@@ -1469,5 +1493,377 @@ export function subscribeVendors(callback: (vendors: VendorRecord[]) => void): (
   callback(INITIAL_VENDORS);
   return () => {};
 }
+
+/* ============================================================ */
+/* GATE PASS & STUDENT OUTING / LEAVE MANAGEMENT (Real Service) */
+/* ============================================================ */
+export const EVENT_GATE_PASSES_CHANGED = 'sh_gate_passes_updated';
+const GATE_PASSES_STORAGE_KEY = 'sh_gate_passes_v1';
+
+const INITIAL_GATE_PASSES: GatePassRequest[] = [
+  {
+    id: 'GP-2026-101',
+    residentId: 'res-demo',
+    residentName: 'Rahul Sharma',
+    studentEmail: 'demo-resident@hostel.edu',
+    roomNumber: '204',
+    block: 'Block A',
+    leaveType: 'Local Outing',
+    departureDate: new Date(Date.now() - 3600000 * 4).toISOString(),
+    expectedReturnDate: new Date(Date.now() + 3600000 * 2).toISOString(),
+    reason: 'Purchase technical textbooks and project hardware components',
+    parentContact: '+91 98765 00111',
+    status: 'Approved',
+    reviewedBy: 'Dr. Rajeshwar K. Sundaram (Warden)',
+    reviewRemarks: 'Permitted. Return strictly before 09:30 PM curfew.',
+    createdAt: new Date(Date.now() - 3600000 * 6).toISOString()
+  },
+  {
+    id: 'GP-2026-102',
+    residentId: 'res-1',
+    residentName: 'Aarav Sharma',
+    studentEmail: 'aarav.sharma@hostel.edu',
+    roomNumber: '101',
+    block: 'Block A',
+    leaveType: 'Home Visit',
+    departureDate: new Date(Date.now() + 86400000).toISOString(),
+    expectedReturnDate: new Date(Date.now() + 86400000 * 4).toISOString(),
+    reason: 'Family wedding ceremony at home town',
+    parentContact: '+91 98765 00112',
+    status: 'Pending',
+    createdAt: new Date().toISOString()
+  }
+];
+
+export function getStoredGatePasses(): GatePassRequest[] {
+  try {
+    const raw = localStorage.getItem(GATE_PASSES_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(GATE_PASSES_STORAGE_KEY, JSON.stringify(INITIAL_GATE_PASSES));
+      return INITIAL_GATE_PASSES;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return INITIAL_GATE_PASSES;
+  }
+}
+
+function saveStoredGatePasses(passes: GatePassRequest[]): void {
+  try {
+    localStorage.setItem(GATE_PASSES_STORAGE_KEY, JSON.stringify(passes));
+    window.dispatchEvent(new Event(EVENT_GATE_PASSES_CHANGED));
+  } catch (err) {
+    console.error('Error saving gate passes:', err);
+  }
+}
+
+export function subscribeGatePasses(
+  callback: (passes: GatePassRequest[]) => void,
+  userFilter?: { role: UserRole; uid: string }
+): () => void {
+  if (isFirebaseConfigured && db) {
+    try {
+      const colRef = collection(db, 'gate_passes');
+      const q = userFilter && userFilter.role === 'resident' && userFilter.uid
+        ? query(colRef, where('residentId', '==', userFilter.uid))
+        : colRef;
+
+      const unsub = onSnapshot(q, snap => {
+        if (!snap.empty) {
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as GatePassRequest));
+          list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          callback(list);
+          if (!userFilter || userFilter.role === 'warden') {
+            saveStoredGatePasses(list);
+          }
+        } else {
+          const stored = getStoredGatePasses();
+          if (userFilter && userFilter.role === 'resident' && userFilter.uid) {
+            callback(stored.filter(p => p.residentId === userFilter.uid));
+          } else {
+            callback(stored);
+          }
+        }
+      }, () => {
+        const stored = getStoredGatePasses();
+        if (userFilter && userFilter.role === 'resident' && userFilter.uid) {
+          callback(stored.filter(p => p.residentId === userFilter.uid));
+        } else {
+          callback(stored);
+        }
+      });
+      return unsub;
+    } catch {}
+  }
+
+  const handler = () => {
+    const stored = getStoredGatePasses();
+    if (userFilter && userFilter.role === 'resident' && userFilter.uid) {
+      callback(stored.filter(p => p.residentId === userFilter.uid));
+    } else {
+      callback(stored);
+    }
+  };
+  window.addEventListener(EVENT_GATE_PASSES_CHANGED, handler);
+  handler();
+  return () => window.removeEventListener(EVENT_GATE_PASSES_CHANGED, handler);
+}
+
+export async function createGatePass(
+  pass: Omit<GatePassRequest, 'id' | 'createdAt' | 'status'>
+): Promise<GatePassRequest> {
+  const current = getStoredGatePasses();
+  const newPass: GatePassRequest = {
+    ...pass,
+    id: `GP-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+    status: 'Pending',
+    createdAt: new Date().toISOString()
+  };
+
+  current.unshift(newPass);
+  saveStoredGatePasses(current);
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'gate_passes', newPass.id), newPass);
+    } catch (e) {
+      console.warn('Failed to save gate pass to Firestore:', e);
+    }
+  }
+
+  createNotification({
+    targetRole: 'warden',
+    title: 'New Out-Pass Request',
+    message: `${pass.residentName} (Room ${pass.roomNumber}) requested a ${pass.leaveType}.`,
+    type: 'notice',
+    priority: 'Normal',
+    link: '/admin/hostel/leaves'
+  });
+
+  logActivity({
+    actor: pass.residentName,
+    actorRole: 'resident',
+    action: 'Requested Gate Pass',
+    target: `${pass.leaveType} (${pass.reason.slice(0, 40)}...)`
+  });
+
+  return newPass;
+}
+
+export async function updateGatePassStatus(
+  passId: string,
+  status: GatePassRequest['status'],
+  remarks?: string,
+  wardenName: string = 'Warden'
+): Promise<boolean> {
+  const current = getStoredGatePasses();
+  const index = current.findIndex(p => p.id === passId);
+  if (index === -1) return false;
+
+  current[index].status = status;
+  current[index].reviewedBy = wardenName;
+  if (remarks) current[index].reviewRemarks = remarks;
+  current[index].updatedAt = new Date().toISOString();
+
+  saveStoredGatePasses(current);
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await updateDoc(doc(db, 'gate_passes', passId), {
+        status,
+        reviewedBy: wardenName,
+        reviewRemarks: remarks || '',
+        updatedAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('Failed to update gate pass in Firestore:', e);
+    }
+  }
+
+  // Notify resident
+  createNotification({
+    userId: current[index].residentId,
+    targetRole: 'resident',
+    title: `Out-Pass Request ${status}`,
+    message: `Your ${current[index].leaveType} request #${passId} has been ${status.toLowerCase()} by ${wardenName}.`,
+    type: status === 'Approved' ? 'success' : status === 'Rejected' ? 'critical' : 'notice',
+    priority: status === 'Approved' ? 'Normal' : 'High',
+    link: '/resident/leave'
+  });
+
+  logActivity({
+    actor: wardenName,
+    actorRole: 'warden',
+    action: `Gate pass ${status}`,
+    target: `${current[index].residentName} — ${current[index].id}`
+  });
+
+  return true;
+}
+
+/* ============================================================ */
+/* NIGHT ATTENDANCE & CURFEW ROLL-CALL (Real Service)           */
+/* ============================================================ */
+export const EVENT_ATTENDANCE_CHANGED = 'sh_attendance_updated';
+const ATTENDANCE_STORAGE_KEY = 'sh_attendance_v1';
+
+export function getStoredAttendance(): NightAttendanceRecord[] {
+  try {
+    const raw = localStorage.getItem(ATTENDANCE_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredAttendance(records: NightAttendanceRecord[]): void {
+  try {
+    localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
+    window.dispatchEvent(new Event(EVENT_ATTENDANCE_CHANGED));
+  } catch (err) {
+    console.error('Error saving attendance:', err);
+  }
+}
+
+export function subscribeAttendance(
+  dateStr: string,
+  callback: (records: NightAttendanceRecord[]) => void
+): () => void {
+  const handler = () => {
+    const all = getStoredAttendance();
+    callback(all.filter(r => r.date === dateStr));
+  };
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(collection(db, 'attendance'), where('date', '==', dateStr));
+      const unsub = onSnapshot(q, snap => {
+        if (!snap.empty) {
+          const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as NightAttendanceRecord));
+          callback(list);
+        } else {
+          handler();
+        }
+      }, () => handler());
+      return unsub;
+    } catch {}
+  }
+
+  window.addEventListener(EVENT_ATTENDANCE_CHANGED, handler);
+  handler();
+  return () => window.removeEventListener(EVENT_ATTENDANCE_CHANGED, handler);
+}
+
+export async function markAttendanceBatch(
+  dateStr: string,
+  records: Omit<NightAttendanceRecord, 'id' | 'timestamp'>[],
+  wardenName: string = 'Warden'
+): Promise<boolean> {
+  const current = getStoredAttendance();
+  const filtered = current.filter(r => r.date !== dateStr);
+  const now = new Date().toISOString();
+
+  const newRecords: NightAttendanceRecord[] = records.map((r, i) => ({
+    ...r,
+    id: `ATT-${dateStr}-${r.residentId}-${i}`,
+    timestamp: now
+  }));
+
+  const updated = [...filtered, ...newRecords];
+  saveStoredAttendance(updated);
+
+  if (isFirebaseConfigured && db) {
+    for (const rec of newRecords) {
+      setDoc(doc(db, 'attendance', rec.id), rec, { merge: true }).catch(() => {});
+    }
+  }
+
+  logActivity({
+    actor: wardenName,
+    actorRole: 'warden',
+    action: 'Logged Night Curfew Attendance',
+    target: `Date: ${dateStr} (${newRecords.length} residents marked)`
+  });
+
+  return true;
+}
+
+/* ============================================================ */
+/* ROOM CHANGE / SWAP REQUEST WORKFLOW (Real Service)           */
+/* ============================================================ */
+export const EVENT_ROOM_REQUESTS_CHANGED = 'sh_room_requests_updated';
+const ROOM_REQUESTS_STORAGE_KEY = 'sh_room_requests_v1';
+
+export function getStoredRoomRequests(): RoomChangeRequest[] {
+  try {
+    const raw = localStorage.getItem(ROOM_REQUESTS_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredRoomRequests(requests: RoomChangeRequest[]): void {
+  try {
+    localStorage.setItem(ROOM_REQUESTS_STORAGE_KEY, JSON.stringify(requests));
+    window.dispatchEvent(new Event(EVENT_ROOM_REQUESTS_CHANGED));
+  } catch (err) {
+    console.error('Error saving room requests:', err);
+  }
+}
+
+export function subscribeRoomChangeRequests(
+  callback: (requests: RoomChangeRequest[]) => void,
+  userFilter?: { role: UserRole; uid: string }
+): () => void {
+  const handler = () => {
+    const stored = getStoredRoomRequests();
+    if (userFilter && userFilter.role === 'resident' && userFilter.uid) {
+      callback(stored.filter(r => r.residentId === userFilter.uid));
+    } else {
+      callback(stored);
+    }
+  };
+
+  window.addEventListener(EVENT_ROOM_REQUESTS_CHANGED, handler);
+  handler();
+  return () => window.removeEventListener(EVENT_ROOM_REQUESTS_CHANGED, handler);
+}
+
+export async function createRoomChangeRequest(
+  req: Omit<RoomChangeRequest, 'id' | 'createdAt' | 'status'>
+): Promise<RoomChangeRequest> {
+  const current = getStoredRoomRequests();
+  const newReq: RoomChangeRequest = {
+    ...req,
+    id: `RCR-${Date.now().toString().slice(-5)}`,
+    status: 'Pending',
+    createdAt: new Date().toISOString()
+  };
+
+  current.unshift(newReq);
+  saveStoredRoomRequests(current);
+
+  createNotification({
+    targetRole: 'warden',
+    title: 'Room Transfer Application Lodged',
+    message: `${req.residentName} (Room ${req.currentRoom}) requested transfer to ${req.preferredBlock}.`,
+    type: 'allocation',
+    priority: 'Normal',
+    link: '/admin/hostel/allocation'
+  });
+
+  logActivity({
+    actor: req.residentName,
+    actorRole: 'resident',
+    action: 'Requested Room Change',
+    target: `From Room ${req.currentRoom} to ${req.preferredBlock}`
+  });
+
+  return newReq;
+}
+
 
 

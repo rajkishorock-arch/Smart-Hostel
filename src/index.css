@@ -714,5 +714,154 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #283548;
 }
 
+/* ============================================================ */
+/* JARVIS / GEC-IOT HIGH-TECH & GLASSMORPHISM CYBERPUNK STYLES  */
+/* ============================================================ */
+
+/* Custom Cyberpunk Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #030712;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 191, 251, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00BFFB;
+  box-shadow: 0 0 10px #00BFFB;
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(10, 15, 30, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 191, 251, 0.18);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s ease;
+}
+.glass-panel-hover:hover {
+  border-color: rgba(0, 191, 251, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 191, 251, 0.12);
+  transform: translateY(-2px);
+}
+
+.glass-card {
+  background: rgba(13, 20, 36, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 191, 251, 0.3);
+  box-shadow: 0 12px 35px rgba(0, 191, 251, 0.15);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 25px rgba(0, 191, 251, 0.35);
+}
+
+.glow-cyan-sm {
+  box-shadow: 0 0 12px rgba(0, 191, 251, 0.25);
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 16px rgba(0, 191, 251, 0.65), 0 0 32px rgba(0, 191, 251, 0.3);
+}
+
+.text-glow-purple {
+  text-shadow: 0 0 16px rgba(168, 85, 247, 0.65);
+}
+
+/* Glowing Cyber Buttons */
+.cyber-btn-cyan {
+  background: linear-gradient(135deg, #00BFFB 0%, #0284c7 100%);
+  color: #030712;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 191, 251, 0.4);
+  transition: all 0.25s ease;
+}
+.cyber-btn-cyan:hover {
+  background: linear-gradient(135deg, #38bdf8 0%, #00BFFB 100%);
+  box-shadow: 0 0 30px rgba(0, 191, 251, 0.7);
+  transform: translateY(-2px);
+}
+
+.cyber-btn-outline {
+  background: rgba(15, 23, 42, 0.6);
+  color: #e2e8f0;
+  border: 1px solid rgba(0, 191, 251, 0.35);
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+.cyber-btn-outline:hover {
+  border-color: #00BFFB;
+  color: #00BFFB;
+  background: rgba(0, 191, 251, 0.1);
+  box-shadow: 0 0 20px rgba(0, 191, 251, 0.25);
+}
+
+/* Cyber Form Controls */
+.cyber-input {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 0.92rem;
+  transition: all 0.2s ease;
+}
+.cyber-input:focus {
+  outline: none;
+  border-color: #00BFFB;
+  box-shadow: 0 0 0 3px rgba(0, 191, 251, 0.2), 0 0 15px rgba(0, 191, 251, 0.3);
+  background: rgba(15, 23, 42, 0.95);
+}
+.cyber-input::placeholder {
+  color: #64748b;
+}
+
+/* Floating Capsule Navbar */
+.capsule-nav {
+  background: rgba(10, 15, 30, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 191, 251, 0.2);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 191, 251, 0.15);
+}
+
+/* Cyber Grid Background Pattern */
+.cyber-grid-bg {
+  background-color: #030712;
+  background-image: 
+    linear-gradient(rgba(0, 191, 251, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 191, 251, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Live Pulse Ring */
+@keyframes cyberPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 191, 251, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 191, 251, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 191, 251, 0); }
+}
+
+.pulse-indicator {
+  animation: cyberPulse 2s infinite;
+}
+
+
 
 

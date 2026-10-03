@@ -118,7 +118,36 @@ service cloud.firestore {
       allow update, delete: if false; // Immutable audit trail
     }
 
-    // 9. Default Deny All Other Collections
+    // 9. Invoices & Billing Collection
+    match /invoices/{invId} {
+      allow read: if isAuthenticated() && (resource.data.studentUid == request.auth.uid || isWarden());
+      allow create, update: if isAuthenticated() && (isWarden() || (resource.data.studentUid == request.auth.uid));
+      allow delete: if isWarden();
+    }
+
+    // 10. Gate Passes & Student Leave Requests
+    match /gate_passes/{passId} {
+      allow read: if isAuthenticated() && (resource.data.residentId == request.auth.uid || isWarden());
+      allow create: if isAuthenticated() && request.resource.data.residentId == request.auth.uid;
+      allow update: if isWarden() || (isAuthenticated() && resource.data.residentId == request.auth.uid);
+      allow delete: if isWarden();
+    }
+
+    // 11. Night Attendance & Curfew Logs
+    match /attendance/{attId} {
+      allow read: if isAuthenticated();
+      allow write: if isWarden();
+    }
+
+    // 12. Room Transfer Requests
+    match /room_requests/{reqId} {
+      allow read: if isAuthenticated() && (resource.data.residentId == request.auth.uid || isWarden());
+      allow create: if isAuthenticated() && request.resource.data.residentId == request.auth.uid;
+      allow update: if isWarden();
+      allow delete: if isWarden();
+    }
+
+    // 13. Default Deny All Other Collections
     match /{document=**} {
       allow read, write: if false;
     }

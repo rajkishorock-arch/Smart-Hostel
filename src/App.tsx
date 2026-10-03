@@ -16,6 +16,8 @@ import { HostelRoomsPage } from './pages/admin/HostelRoomsPage';
 import { HostelAllocationPage } from './pages/admin/HostelAllocationPage';
 import { HostelResidentsPage } from './pages/admin/HostelResidentsPage';
 import { HostelBlocksPage } from './pages/admin/HostelBlocksPage';
+import { HostelGatePassesPage } from './pages/admin/HostelGatePassesPage';
+import { NightAttendancePage } from './pages/admin/NightAttendancePage';
 import { MessOverviewPage } from './pages/admin/MessOverviewPage';
 import { MessTodayPage } from './pages/admin/MessTodayPage';
 import { MessWeeklyPage } from './pages/admin/MessWeeklyPage';
@@ -40,6 +42,7 @@ import { ResidentOverviewPage } from './pages/resident/ResidentOverviewPage';
 import { ResidentBillingPage } from './pages/resident/ResidentBillingPage';
 import { ResidentRoomPage } from './pages/resident/ResidentRoomPage';
 import { ResidentAllocationPage } from './pages/resident/ResidentAllocationPage';
+import { ResidentGatePassPage } from './pages/resident/ResidentGatePassPage';
 import { ResidentMessTodayPage } from './pages/resident/ResidentMessTodayPage';
 import { ResidentMessWeeklyPage } from './pages/resident/ResidentMessWeeklyPage';
 import { ResidentAnnouncementsPage } from './pages/resident/ResidentAnnouncementsPage';
@@ -111,6 +114,22 @@ export function App() {
             element={
               <ProtectedRoute allowedRole="warden">
                 <HostelBlocksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/gate-passes"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <HostelGatePassesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/attendance"
+            element={
+              <ProtectedRoute allowedRole="warden">
+                <NightAttendancePage />
               </ProtectedRoute>
             }
           />
@@ -294,6 +313,22 @@ export function App() {
             element={
               <ProtectedRoute allowedRole="resident">
                 <ResidentAllocationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resident/gate-pass"
+            element={
+              <ProtectedRoute allowedRole="resident">
+                <ResidentGatePassPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gate-pass"
+            element={
+              <ProtectedRoute allowedRole="resident">
+                <ResidentGatePassPage />
               </ProtectedRoute>
             }
           />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   getAllResidents,
   getStoredRooms,
@@ -23,6 +24,8 @@ interface SearchItem {
 }
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
+  const isWarden = user?.role === 'warden';
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,44 +53,63 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
 
     const matched: SearchItem[] = [];
 
-    // Search Residents
-    for (const res of residents) {
-      if (
-        res.name.toLowerCase().includes(q) ||
-        res.email.toLowerCase().includes(q) ||
-        (res.roomNumber && res.roomNumber.toLowerCase().includes(q))
-      ) {
-        matched.push({
-          id: `res-${res.uid}`,
-          category: 'Resident',
-          title: res.name,
-          subtitle: `${res.email} • Room ${res.roomNumber || 'Not Allocated'}`,
-          badge: res.roomNumber ? 'Allocated' : 'Unallocated',
-          path: '/admin/hostel/allocation'
-        });
+    // Search Residents (WARDEN ONLY - residents cannot spy on other residents)
+    if (isWarden) {
+      for (const res of residents) {
+        if (
+          res.name.toLowerCase().includes(q) ||
+          res.email.toLowerCase().includes(q) ||
+          (res.roomNumber && res.roomNumber.toLowerCase().includes(q))
+        ) {
+          matched.push({
+            id: `res-${res.uid}`,
+            category: 'Resident',
+            title: res.name,
+            subtitle: `${res.email} • Room ${res.roomNumber || 'Not Allocated'}`,
+            badge: res.roomNumber ? 'Allocated' : 'Unallocated',
+            path: '/admin/hostel/allocation'
+          });
+        }
       }
-    }
 
-    // Search Rooms
-    for (const rm of rooms) {
-      if (
-        rm.roomNumber.toLowerCase().includes(q) ||
-        rm.block.toLowerCase().includes(q) ||
-        rm.beds.some(b => b.residentName?.toLowerCase().includes(q))
-      ) {
+      // Search Rooms (Warden link)
+      for (const rm of rooms) {
+        if (
+          rm.roomNumber.toLowerCase().includes(q) ||
+          rm.block.toLowerCase().includes(q) ||
+          rm.beds.some(b => b.residentName?.toLowerCase().includes(q))
+        ) {
+          matched.push({
+            id: `room-${rm.id}`,
+            category: 'Room',
+            title: `Room ${rm.roomNumber} (${rm.block})`,
+            subtitle: `Capacity: ${rm.capacity} • Occupied: ${rm.occupied} bed(s)`,
+            badge: rm.occupied === rm.capacity ? 'Full' : `${rm.capacity - rm.occupied} Available`,
+            path: '/admin/hostel/rooms'
+          });
+        }
+      }
+    } else {
+      // For Resident Student: Only search their own allocated room
+      if (user?.roomNumber && user.roomNumber.toLowerCase().includes(q)) {
         matched.push({
-          id: `room-${rm.id}`,
+          id: `room-my`,
           category: 'Room',
-          title: `Room ${rm.roomNumber} (${rm.block})`,
-          subtitle: `Capacity: ${rm.capacity} • Occupied: ${rm.occupied} bed(s)`,
-          badge: rm.occupied === rm.capacity ? 'Full' : `${rm.capacity - rm.occupied} Available`,
-          path: '/admin/hostel/rooms'
+          title: `My Room ${user.roomNumber} (${user.block || 'Block A'})`,
+          subtitle: `Bed: ${user.bedNumber || 'Bed 1'} • Allocated`,
+          badge: 'My Room',
+          path: '/resident/room'
         });
       }
     }
 
     // Search Maintenance Tickets
     for (const tkt of tickets) {
+      // If resident, only allow their own tickets or their room's tickets
+      if (!isWarden && tkt.residentId && tkt.residentId !== user?.id && tkt.roomNumber !== user?.roomNumber) {
+        continue;
+      }
+
       const ticketTitle = tkt.title || tkt.description;
       if (
         tkt.id.toLowerCase().includes(q) ||
@@ -102,12 +124,12 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
           title: `#${tkt.id}: ${ticketTitle}`,
           subtitle: `Room ${tkt.roomNumber || tkt.room || 'N/A'} • ${tkt.category} • Priority: ${tkt.priority}`,
           badge: tkt.status,
-          path: '/admin/maintenance/resolution'
+          path: isWarden ? '/admin/maintenance/resolution' : '/resident/maintenance/tickets'
         });
       }
     }
 
-    // Search Notices
+    // Search Public Notices (accessible to all)
     for (const note of notices) {
       const noteDesc = note.content || note.description || '';
       if (
@@ -121,13 +143,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
           title: note.title,
           subtitle: `${note.category} • ${noteDesc.slice(0, 60)}...`,
           badge: note.priority || 'General',
-          path: '/admin/mess/announcements'
+          path: isWarden ? '/admin/mess/announcements' : '/resident/announcements'
         });
       }
     }
 
     setResults(matched.slice(0, 15));
-  }, [query]);
+  }, [query, isWarden, user]);
 
   if (!isOpen) return null;
 

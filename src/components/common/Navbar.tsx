@@ -42,9 +42,11 @@ export const Navbar: React.FC = () => {
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        background: '#ffffff',
-        borderBottom: '1px solid var(--border-default)',
-        boxShadow: 'var(--shadow-xs)'
+        background: 'rgba(3, 7, 18, 0.85)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(0, 191, 251, 0.18)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)'
       }}
     >
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '68px' }}>
@@ -54,37 +56,40 @@ export const Navbar: React.FC = () => {
             style={{
               width: '38px',
               height: '38px',
-              borderRadius: '8px',
-              background: '#1e3a8a',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #00BFFB 0%, #1e3a8a 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#ffffff'
+              color: '#ffffff',
+              boxShadow: '0 0 15px rgba(0, 191, 251, 0.4)'
             }}
           >
-            <Building2 size={22} />
+            <Building2 size={22} color="#ffffff" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#0f172a' }}>
-                Smart<span style={{ color: '#2563eb' }}>Hostel</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff' }}>
+                Smart<span style={{ color: '#00BFFB', textShadow: '0 0 12px rgba(0, 191, 251, 0.6)' }}>Hostel</span>
               </span>
               <span
                 style={{
                   fontSize: '0.65rem',
-                  fontWeight: 700,
-                  background: '#eff6ff',
-                  color: '#1d4ed8',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  textTransform: 'uppercase'
+                  fontWeight: 800,
+                  background: 'rgba(0, 191, 251, 0.15)',
+                  color: '#00BFFB',
+                  border: '1px solid rgba(0, 191, 251, 0.3)',
+                  padding: '2px 7px',
+                  borderRadius: '9999px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
                 }}
               >
-                &amp; Mess
+                OS 2.6
               </span>
             </div>
-            <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 500, margin: 0 }}>
-              Campus Living &amp; Dining System
+            <p style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 500, margin: 0 }}>
+              Autonomous Residential Platform
             </p>
           </div>
         </Link>
@@ -96,8 +101,8 @@ export const Navbar: React.FC = () => {
             style={{
               fontSize: '0.875rem',
               fontWeight: 600,
-              color: location.pathname === '/' && !location.hash ? '#1e3a8a' : '#475569',
-              transition: 'color 0.15s ease'
+              color: location.pathname === '/' && !location.hash ? '#00BFFB' : '#94a3b8',
+              transition: 'all 0.15s ease'
             }}
           >
             Home
@@ -109,11 +114,17 @@ export const Navbar: React.FC = () => {
               style={{
                 fontSize: '0.875rem',
                 fontWeight: 600,
-                color: '#475569',
-                transition: 'color 0.15s ease'
+                color: '#94a3b8',
+                transition: 'all 0.15s ease'
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#1e3a8a')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = '#00BFFB';
+                e.currentTarget.style.textShadow = '0 0 10px rgba(0, 191, 251, 0.5)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = '#94a3b8';
+                e.currentTarget.style.textShadow = 'none';
+              }}
             >
               {link.label}
             </a>
@@ -126,8 +137,8 @@ export const Navbar: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Link
                 to={isWarden ? '/admin/dashboard' : '/dashboard'}
-                className="btn btn-primary btn-sm"
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                className="cyber-btn-cyan btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
               >
                 {isWarden ? (
                   <>
@@ -141,19 +152,19 @@ export const Navbar: React.FC = () => {
               </Link>
               <button
                 onClick={handleLogout}
-                className="btn btn-secondary btn-sm"
+                className="cyber-btn-outline btn-sm"
                 title="Log out"
-                style={{ padding: '7px 10px' }}
+                style={{ padding: '7px 10px', borderRadius: '8px' }}
               >
                 <LogOut size={15} />
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Link to="/login" className="btn btn-secondary btn-sm">
+              <Link to="/login" className="cyber-btn-outline btn-sm" style={{ borderRadius: '8px' }}>
                 Sign In
               </Link>
-              <Link to="/register" className="btn btn-primary btn-sm">
+              <Link to="/register" className="cyber-btn-cyan btn-sm" style={{ borderRadius: '8px' }}>
                 Get Started
               </Link>
             </div>
@@ -162,7 +173,7 @@ export const Navbar: React.FC = () => {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{ display: 'inline-flex', padding: '6px', color: '#1e293b', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+            style={{ display: 'inline-flex', padding: '6px', color: '#e2e8f0', background: 'rgba(15, 23, 42, 0.7)', borderRadius: '8px', border: '1px solid rgba(0, 191, 251, 0.2)' }}
             className="mobile-menu-toggle"
             aria-label="Toggle navigation menu"
           >
@@ -175,8 +186,9 @@ export const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div
           style={{
-            background: '#ffffff',
-            borderTop: '1px solid var(--border-default)',
+            background: 'rgba(3, 7, 18, 0.95)',
+            borderTop: '1px solid rgba(0, 191, 251, 0.2)',
+            backdropFilter: 'blur(20px)',
             padding: '16px 20px',
             display: 'flex',
             flexDirection: 'column',
@@ -186,7 +198,7 @@ export const Navbar: React.FC = () => {
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
-            style={{ padding: '8px 0', fontWeight: 600, color: '#0f172a', borderBottom: '1px solid #f8fafc' }}
+            style={{ padding: '8px 0', fontWeight: 600, color: '#00BFFB', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
           >
             Home
           </Link>
@@ -195,7 +207,7 @@ export const Navbar: React.FC = () => {
               key={idx}
               href={link.href}
               onClick={() => setMobileMenuOpen(false)}
-              style={{ padding: '8px 0', fontWeight: 600, color: '#475569', borderBottom: '1px solid #f8fafc' }}
+              style={{ padding: '8px 0', fontWeight: 600, color: '#cbd5e1', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
             >
               {link.label}
             </a>
@@ -207,21 +219,21 @@ export const Navbar: React.FC = () => {
                 <Link
                   to={isWarden ? '/admin/dashboard' : '/dashboard'}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="btn btn-primary"
-                  style={{ width: '100%' }}
+                  className="cyber-btn-cyan"
+                  style={{ width: '100%', padding: '10px', textAlign: 'center', borderRadius: '8px' }}
                 >
                   Go to {isWarden ? 'Warden Portal' : 'Resident Portal'}
                 </Link>
-                <button onClick={handleLogout} className="btn btn-secondary" style={{ width: '100%' }}>
+                <button onClick={handleLogout} className="cyber-btn-outline" style={{ width: '100%', padding: '10px', borderRadius: '8px' }}>
                   Sign Out
                 </button>
               </>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="btn btn-secondary" style={{ width: '100%' }}>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="cyber-btn-outline" style={{ width: '100%', textAlign: 'center', padding: '10px', borderRadius: '8px' }}>
                   Sign In
                 </Link>
-                <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="btn btn-primary" style={{ width: '100%' }}>
+                <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="cyber-btn-cyan" style={{ width: '100%', textAlign: 'center', padding: '10px', borderRadius: '8px' }}>
                   Get Started
                 </Link>
               </div>

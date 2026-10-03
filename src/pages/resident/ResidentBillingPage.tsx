@@ -27,23 +27,24 @@ export const ResidentBillingPage: React.FC = () => {
 
   useEffect(() => {
     const unsub = subscribeInvoices(allInvs => {
-      // Find invoices for current user or default demo resident
+      // Find invoices strictly for current authenticated user or demo resident
       const userInvs = allInvs.filter(i =>
         i.studentUid === user?.uid ||
+        i.studentUid === user?.id ||
         i.studentEmail.toLowerCase() === user?.email?.toLowerCase() ||
-        i.studentEmail.includes('demo-resident')
+        (user?.email === 'resident@campus.edu' && (i.studentUid === 'res-demo' || i.studentEmail.includes('resident@campus.edu')))
       );
-      setInvoices(userInvs.length > 0 ? userInvs : allInvs.slice(0, 1));
+      setInvoices(userInvs);
     });
     return () => unsub();
   }, [user]);
 
-  const activeInvoice = invoices[0] || {
+  const activeInvoice = invoices[0] || (user?.email === 'resident@campus.edu' ? {
     id: 'INV-2026-001',
-    studentUid: user?.uid || 'demo-uid',
-    studentName: user?.name || 'Aarav Sharma',
-    studentEmail: user?.email || 'demo-resident@hostel.edu',
-    roomNumber: user?.roomNumber || 'A-204',
+    studentUid: user?.id || 'res-demo',
+    studentName: user?.name || 'Rahul Sharma',
+    studentEmail: user?.email || 'resident@campus.edu',
+    roomNumber: user?.roomNumber || '204',
     term: 'Spring Term 2026',
     roomFee: 6500,
     messFee: 4200,
@@ -53,7 +54,7 @@ export const ResidentBillingPage: React.FC = () => {
     status: 'Pending',
     dueDate: '2026-04-05',
     createdAt: '2026-03-01T08:00:00Z'
-  };
+  } : null);
 
   const handleSimulatedPayment = async () => {
     setIsProcessing(true);
@@ -134,13 +135,26 @@ export const ResidentBillingPage: React.FC = () => {
           </div>
         )}
 
-        {/* Invoice Statement Card */}
-        <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid var(--border-default)', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
-          <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Invoice Statement #{activeInvoice.id}
-              </span>
+        {!activeInvoice ? (
+          <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid var(--border-default)', padding: '56px 24px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
+              Zero Balance &bull; All Hostel Fees Cleared
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: '460px', margin: '0 auto' }}>
+              You do not have any outstanding dues for the current academic session. Whenever a new fee schedule is published by Accounts Administration, it will appear here.
+            </p>
+          </div>
+        ) : (
+          /* Invoice Statement Card */
+          <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid var(--border-default)', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
+            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  Invoice Statement #{activeInvoice.id}
+                </span>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '4px 0 0 0' }}>
                 {activeInvoice.term} Accommodation &amp; Mess
               </h2>
@@ -268,6 +282,7 @@ export const ResidentBillingPage: React.FC = () => {
             )}
           </div>
         </div>
+        )}
 
         {/* Modal: Interactive Payment Gateway Simulation */}
         {isPayModalOpen && (

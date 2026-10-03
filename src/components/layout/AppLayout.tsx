@@ -35,7 +35,8 @@ import {
   Radio,
   Truck,
   Workflow,
-  Code2
+  Code2,
+  QrCode
 } from 'lucide-react';
 import { SmartHostelAIAssistant } from '../common/SmartHostelAIAssistant';
 import { NotificationBell } from '../common/NotificationBell';
@@ -217,6 +218,24 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               >
                 <Layers size={16} />
                 <span>Blocks &amp; Floors</span>
+              </NavLink>
+              <NavLink
+                to="/admin/gate-passes"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active accent-hostel' : ''}`}
+                onClick={closeMobile}
+                style={{ paddingLeft: '28px', fontSize: '0.82rem' }}
+              >
+                <QrCode size={16} />
+                <span>Gate Pass &amp; Leaves</span>
+              </NavLink>
+              <NavLink
+                to="/admin/attendance"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active accent-hostel' : ''}`}
+                onClick={closeMobile}
+                style={{ paddingLeft: '28px', fontSize: '0.82rem' }}
+              >
+                <Clock size={16} />
+                <span>Night Attendance</span>
               </NavLink>
 
               <div className="sidebar-nav-section" style={{ marginTop: '16px' }}>Catering</div>
@@ -404,6 +423,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               >
                 <KeyRound size={16} />
                 <span>Allocation Slip</span>
+              </NavLink>
+              <NavLink
+                to="/resident/gate-pass"
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active accent-hostel' : ''}`}
+                onClick={closeMobile}
+                style={{ paddingLeft: '28px', fontSize: '0.82rem' }}
+              >
+                <QrCode size={16} />
+                <span>Gate Pass &amp; Leaves</span>
               </NavLink>
 
               <div className="sidebar-nav-section" style={{ marginTop: '16px' }}>Dining</div>
