@@ -19,7 +19,9 @@ import {
   ChevronRight,
   User,
   MapPin,
-  PhoneCall
+  PhoneCall,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 
 export const ResidentGatePassPage: React.FC = () => {
@@ -180,6 +182,98 @@ export const ResidentGatePassPage: React.FC = () => {
           <strong style={{ color: '#0f172a' }}>Campus Curfew Protocol:</strong> Standard hostel gates lock at 10:00 PM. All day out-passes must be scanned back at the main security guard gate before curfew. Home leaves send an automatic SMS notification to your verified parent mobile number.
         </div>
       </div>
+
+      {/* Active Out-Pass Hero Card */}
+      {(() => {
+        const activePass = passes.find(
+          p => p.status?.toLowerCase() === 'approved' || p.status?.toLowerCase() === 'checked out'
+        );
+        if (!activePass) return null;
+
+        const isCheckedOut = activePass.status?.toLowerCase() === 'checked out';
+
+        return (
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              borderRadius: '16px',
+              padding: '24px',
+              color: '#ffffff',
+              marginBottom: '24px',
+              boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '20px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '14px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: isCheckedOut ? '#38bdf8' : '#34d399'
+                }}
+              >
+                {isCheckedOut ? <LogOut size={26} /> : <CheckCircle2 size={26} />}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      background: isCheckedOut ? '#0284c7' : '#059669',
+                      color: '#ffffff',
+                      letterSpacing: '0.04em'
+                    }}
+                  >
+                    {isCheckedOut ? 'ACTIVE OUTPASS • CURRENTLY OFF-CAMPUS' : 'APPROVED • READY FOR GATE SCAN'}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    Return Deadline: {activePass.expectedReturnTime || '21:00'} (Curfew 10:00 PM)
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
+                  {activePass.reason} ({activePass.destination || 'City Outing'})
+                </h2>
+                <div style={{ fontSize: '0.8rem', color: '#cbd5e1', marginTop: '4px' }}>
+                  Verified Parent: {activePass.parentPhone || user?.parentPhone || '+91 94310 12345'} • Dr. R. K. Verma (Chief Warden)
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedPassForQR(activePass)}
+              style={{
+                background: '#00BFFB',
+                color: '#030712',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                padding: '12px 20px',
+                borderRadius: '10px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 0 16px rgba(0, 191, 251, 0.4)'
+              }}
+            >
+              <QrCode size={18} />
+              <span>Show QR Pass at Gate</span>
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Gate Pass List */}
       <div className="card" style={{ padding: '24px', background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>

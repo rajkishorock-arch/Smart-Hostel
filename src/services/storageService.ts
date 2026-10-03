@@ -16,7 +16,10 @@ import {
   VendorRecord,
   GatePassRequest,
   NightAttendanceRecord,
-  RoomChangeRequest
+  RoomChangeRequest,
+  DigitalMealToken,
+  GateMovementLog,
+  MealRebateRecord
 } from '../types';
 import {
   DEMO_USERS,
@@ -41,6 +44,7 @@ import {
 } from 'firebase/firestore';
 import { createNotification } from './notificationService';
 import { logActivity } from './activityService';
+export { logActivity };
 
 const KEYS = {
   USERS: 'sh_users_v1',
@@ -1864,6 +1868,240 @@ export async function createRoomChangeRequest(
 
   return newReq;
 }
+
+// ------------------ MEAL TOKENS & MESS TURNSTILE ENGINE ------------------
+const KEYS_MEAL_TOKENS = 'sh_meal_tokens_v1';
+export const EVENT_MEAL_TOKENS_CHANGED = 'sh_meal_tokens_updated';
+
+export function getStoredMealTokens(): DigitalMealToken[] {
+  try {
+    const raw = localStorage.getItem(KEYS_MEAL_TOKENS);
+    if (!raw) {
+      const today = new Date().toISOString().split('T')[0];
+      const initial: DigitalMealToken[] = [
+        {
+          id: `MTK-${today}-res-demo-breakfast`,
+          tokenCode: `MTK-${today.slice(5)}-204-BK`,
+          date: today,
+          mealType: 'Breakfast',
+          studentId: 'res-demo',
+          studentName: 'Rahul Sharma',
+          roomNumber: '204',
+          hostel: 'Aravali Boys Hostel',
+          status: 'Consumed',
+          consumedAt: `${today}T08:15:00.000Z`,
+          scannedBy: 'Mess Turnstile #1 (Supervisor R. Yadav)',
+          calories: 480
+        },
+        {
+          id: `MTK-${today}-res-demo-lunch`,
+          tokenCode: `MTK-${today.slice(5)}-204-LN`,
+          date: today,
+          mealType: 'Lunch',
+          studentId: 'res-demo',
+          studentName: 'Rahul Sharma',
+          roomNumber: '204',
+          hostel: 'Aravali Boys Hostel',
+          status: 'Valid',
+          calories: 740
+        },
+        {
+          id: `MTK-${today}-res-demo-snacks`,
+          tokenCode: `MTK-${today.slice(5)}-204-SN`,
+          date: today,
+          mealType: 'Snacks',
+          studentId: 'res-demo',
+          studentName: 'Rahul Sharma',
+          roomNumber: '204',
+          hostel: 'Aravali Boys Hostel',
+          status: 'Valid',
+          calories: 290
+        },
+        {
+          id: `MTK-${today}-res-demo-dinner`,
+          tokenCode: `MTK-${today.slice(5)}-204-DN`,
+          date: today,
+          mealType: 'Dinner',
+          studentId: 'res-demo',
+          studentName: 'Rahul Sharma',
+          roomNumber: '204',
+          hostel: 'Aravali Boys Hostel',
+          status: 'Valid',
+          calories: 680
+        }
+      ];
+      localStorage.setItem(KEYS_MEAL_TOKENS, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredMealTokens(tokens: DigitalMealToken[]): void {
+  localStorage.setItem(KEYS_MEAL_TOKENS, JSON.stringify(tokens));
+  triggerEvent(EVENT_MEAL_TOKENS_CHANGED);
+}
+
+export function subscribeMealTokens(
+  callback: (tokens: DigitalMealToken[]) => void,
+  studentId?: string
+): () => void {
+  const handler = () => {
+    const all = getStoredMealTokens();
+    if (studentId) {
+      callback(all.filter(t => t.studentId === studentId));
+    } else {
+      callback(all);
+    }
+  };
+  window.addEventListener(EVENT_MEAL_TOKENS_CHANGED, handler);
+  handler();
+  return () => window.removeEventListener(EVENT_MEAL_TOKENS_CHANGED, handler);
+}
+
+export async function scanAndConsumeMealToken(
+  tokenCode: string,
+  scannedBy: string = 'Mess Turnstile #1'
+): Promise<{ success: boolean; token?: DigitalMealToken; message: string }> {
+  const all = getStoredMealTokens();
+  const index = all.findIndex(t => t.tokenCode.toLowerCase() === tokenCode.toLowerCase() || t.id.toLowerCase() === tokenCode.toLowerCase());
+  if (index === -1) {
+    return { success: false, message: 'Invalid Meal Token: Not found in campus meal registry.' };
+  }
+  const token = all[index];
+  if (token.status === 'Consumed') {
+    return {
+      success: false,
+      token,
+      message: `Fraud Prevention: Token was already scanned and consumed at ${new Date(token.consumedAt || '').toLocaleTimeString()}!`
+    };
+  }
+  if (token.status === 'Rebated') {
+    return {
+      success: false,
+      token,
+      message: 'Token Invalid: Resident has an approved leave pass and meal rebate credited.'
+    };
+  }
+
+  token.status = 'Consumed';
+  token.consumedAt = new Date().toISOString();
+  token.scannedBy = scannedBy;
+  all[index] = token;
+  saveStoredMealTokens(all);
+
+  logActivity({
+    actor: scannedBy,
+    actorRole: 'warden',
+    action: `Scanned & Approved ${token.mealType}`,
+    target: `${token.studentName} (Room ${token.roomNumber})`
+  });
+
+  return {
+    success: true,
+    token,
+    message: `Access Granted! ${token.mealType} verified for ${token.studentName} (Room ${token.roomNumber}).`
+  };
+}
+
+// ------------------ GATE MOVEMENT & TURNSTILE CHECKPOINT ------------------
+const KEYS_GATE_MOVEMENTS = 'sh_gate_movements_v1';
+export const EVENT_GATE_MOVEMENTS_CHANGED = 'sh_gate_movements_updated';
+
+export function getStoredGateMovements(): GateMovementLog[] {
+  try {
+    const raw = localStorage.getItem(KEYS_GATE_MOVEMENTS);
+    if (!raw) {
+      const now = new Date();
+      const initial: GateMovementLog[] = [
+        {
+          id: 'MOV-101',
+          passId: 'GP-101',
+          residentId: 'res-demo',
+          residentName: 'Rahul Sharma',
+          roomNumber: '204',
+          movementType: 'Exit',
+          timestamp: new Date(now.getTime() - 3600000 * 2).toISOString(),
+          gateNumber: 'Main Gate Turnstile A',
+          securityOfficer: 'Guard R. Singh',
+          curfewStatus: 'Within Hours'
+        }
+      ];
+      localStorage.setItem(KEYS_GATE_MOVEMENTS, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredGateMovements(movements: GateMovementLog[]): void {
+  localStorage.setItem(KEYS_GATE_MOVEMENTS, JSON.stringify(movements));
+  triggerEvent(EVENT_GATE_MOVEMENTS_CHANGED);
+}
+
+export function subscribeGateMovements(callback: (logs: GateMovementLog[]) => void): () => void {
+  const handler = () => callback(getStoredGateMovements());
+  window.addEventListener(EVENT_GATE_MOVEMENTS_CHANGED, handler);
+  handler();
+  return () => window.removeEventListener(EVENT_GATE_MOVEMENTS_CHANGED, handler);
+}
+
+export async function recordGateMovement(
+  passId: string,
+  movementType: 'Exit' | 'Entry',
+  gateNumber: string = 'Main Gate Turnstile A',
+  securityOfficer: string = 'Security Officer'
+): Promise<{ success: boolean; log?: GateMovementLog; message: string }> {
+  const passes = getStoredGatePasses();
+  const pass = passes.find(p => p.id === passId);
+  if (!pass) {
+    return { success: false, message: 'Gate pass record not found.' };
+  }
+
+  const now = new Date();
+  const log: GateMovementLog = {
+    id: `MOV-${Date.now().toString().slice(-5)}`,
+    passId: pass.id,
+    residentId: pass.residentId,
+    residentName: pass.residentName,
+    roomNumber: pass.roomNumber,
+    movementType,
+    timestamp: now.toISOString(),
+    gateNumber,
+    securityOfficer,
+    curfewStatus: 'Within Hours'
+  };
+
+  const movements = getStoredGateMovements();
+  movements.unshift(log);
+  saveStoredGateMovements(movements);
+
+  if (movementType === 'Exit') {
+    pass.status = 'Checked Out';
+  } else {
+    pass.status = 'Completed';
+  }
+  pass.updatedAt = now.toISOString();
+  saveStoredGatePasses(passes);
+
+  logActivity({
+    actor: securityOfficer,
+    actorRole: 'warden',
+    action: `Gate ${movementType} Logged`,
+    target: `${pass.residentName} (${pass.roomNumber}) via ${gateNumber}`
+  });
+
+  return {
+    success: true,
+    log,
+    message: `Gate ${movementType} recorded successfully for ${pass.residentName}.`
+  };
+}
+
 
 
 

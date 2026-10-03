@@ -351,4 +351,48 @@ export interface RoomChangeRequest {
   createdAt: string;
 }
 
+export interface DigitalMealToken {
+  id: string;
+  tokenCode: string;
+  date: string;
+  mealType: 'Breakfast' | 'Lunch' | 'Snacks' | 'Dinner';
+  studentId: string;
+  studentName: string;
+  roomNumber: string;
+  hostel: string;
+  status: 'Valid' | 'Consumed' | 'Expired' | 'Rebated';
+  consumedAt?: string;
+  scannedBy?: string;
+  calories: number;
+  dietaryPreference?: string;
+}
+
+export interface GateMovementLog {
+  id: string;
+  passId: string;
+  residentId: string;
+  residentName: string;
+  roomNumber: string;
+  movementType: 'Exit' | 'Entry';
+  timestamp: string;
+  gateNumber: string;
+  securityOfficer: string;
+  curfewStatus: 'Within Hours' | 'Curfew Violation' | 'Authorized Extension';
+}
+
+export interface MealRebateRecord {
+  id: string;
+  residentId: string;
+  residentName: string;
+  passId: string;
+  startDate: string;
+  endDate: string;
+  daysCount: number;
+  rebateAmountPerDay: number;
+  totalRebateCredited: number;
+  status: 'Credited' | 'Pending Review';
+  createdAt: string;
+}
+
+
 
