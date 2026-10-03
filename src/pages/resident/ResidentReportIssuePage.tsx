@@ -23,7 +23,7 @@ export const ResidentReportIssuePage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [room, setRoom] = useState(user?.roomNumber || '204');
+  const [room, setRoom] = useState(user?.roomNumber || '');
   const [block, setBlock] = useState(user?.block || 'Block A');
   const [category, setCategory] = useState<TicketCategory>('Electrical');
   const [priority, setPriority] = useState<TicketPriority>('Medium');
@@ -87,7 +87,7 @@ export const ResidentReportIssuePage: React.FC = () => {
         id: `tkt-${Date.now().toString().slice(-5)}`,
         residentId: user.uid,
         residentName: user.name || 'Resident',
-        room: room.trim().slice(0, 15) || user.roomNumber || '204',
+        room: room.trim().slice(0, 15) || user.roomNumber || 'Common Area',
         block: block.trim().slice(0, 20) || user.block || 'Block A',
         category,
         description: description.trim(),

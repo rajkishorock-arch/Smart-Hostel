@@ -76,7 +76,7 @@ export const ResidentRoomPage: React.FC = () => {
             </span>
           </div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--neutral-dark)', margin: 0 }}>
-            My Room: {user?.roomNumber || '204'} ({user?.block || 'Block A'})
+            {user?.roomNumber ? `My Room: Room ${user.roomNumber} (${user.block || 'Block A'})` : 'Room Allocation Pending'}
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: '0.875rem', color: 'var(--neutral-muted)' }}>
             Room details, assigned bed, registered roommates, and campus residential guidelines.

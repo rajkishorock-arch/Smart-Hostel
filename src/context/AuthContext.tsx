@@ -57,11 +57,11 @@ async function fetchOrBootstrapProfile(fbUser: FirebaseUser): Promise<UserProfil
   }
 
   // 2. Specific automatic repair for known demo resident account
-  if (email === 'demo-resident@hostel.edu') {
+  if (email === 'demo-resident@hostel.edu' || email === 'resident@campus.edu') {
     const demoResidentProfile: UserProfile = {
       uid: fbUser.uid,
-      email: 'demo-resident@hostel.edu',
-      name: 'Demo Resident',
+      email: email,
+      name: 'Rahul Sharma',
       role: 'resident',
       phone: '+91 98000 00000',
       status: 'active',
@@ -69,6 +69,8 @@ async function fetchOrBootstrapProfile(fbUser: FirebaseUser): Promise<UserProfil
       block: 'Block A',
       roomNumber: '204',
       bedNumber: 'Bed 1',
+      parentPhone: '+91 94310 12345',
+      bloodGroup: 'B+',
       createdAt: new Date().toISOString()
     };
     if (isFirebaseConfigured && db) {
@@ -336,8 +338,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phone: userData.phone.trim() || '+91 98000 00000',
         hostel: userData.hostel || 'Aravali Residence Hall',
         block: userData.block || 'Block A',
-        roomNumber: userData.roomNumber || '204',
-        bedNumber: userData.bedNumber || 'Bed 2',
+        roomNumber: userData.roomNumber || '',
+        bedNumber: userData.bedNumber || '',
+        parentPhone: userData.parentPhone,
+        bloodGroup: userData.bloodGroup,
+        emergencyContact: userData.emergencyContact,
         createdAt: new Date().toISOString()
       };
 

@@ -126,10 +126,28 @@ export const ResidentProfilePage: React.FC = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f8fafc' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--neutral-muted)', fontSize: '0.86rem' }}>
-              <Bed size={16} /> Room & Bed:
+              <Bed size={16} /> Room &amp; Bed:
             </span>
-            <strong style={{ color: 'var(--brand-blue)', fontSize: '0.88rem' }}>
-              Room {user?.roomNumber || '204'} ({user?.bedNumber || 'Bed 1'})
+            <strong style={{ color: user?.roomNumber ? 'var(--brand-blue)' : '#d97706', fontSize: '0.88rem' }}>
+              {user?.roomNumber ? `Room ${user.roomNumber} (${user.bedNumber || 'Bed 1'})` : 'Allocation Pending'}
+            </strong>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f8fafc' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--neutral-muted)', fontSize: '0.86rem' }}>
+              <Phone size={16} /> Parent / Guardian:
+            </span>
+            <strong style={{ color: 'var(--neutral-dark)', fontSize: '0.88rem' }}>
+              {user?.parentPhone || '+91 94310 12345'}
+            </strong>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f8fafc' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--neutral-muted)', fontSize: '0.86rem' }}>
+              <ShieldCheck size={16} /> Blood Group:
+            </span>
+            <strong style={{ color: 'var(--neutral-dark)', fontSize: '0.88rem' }}>
+              {user?.bloodGroup || 'B+'}
             </strong>
           </div>
 

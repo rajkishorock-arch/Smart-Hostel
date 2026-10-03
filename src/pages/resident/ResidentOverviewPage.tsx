@@ -228,11 +228,11 @@ export const ResidentOverviewPage: React.FC = () => {
               <DoorOpen size={16} />
             </div>
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--brand-blue)' }}>
-            Room {user?.roomNumber || '204'}
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: user?.roomNumber ? 'var(--brand-blue)' : '#d97706' }}>
+            {user?.roomNumber ? `Room ${user.roomNumber}` : 'Pending'}
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--neutral-muted)', marginTop: '4px' }}>
-            {user?.block || 'Block A'} • {user?.bedNumber || 'Bed 1'}
+            {user?.roomNumber ? `${user.block || 'Block A'} • ${user.bedNumber || 'Bed 1'}` : 'Awaiting Warden Allocation'}
           </div>
         </div>
 
@@ -484,7 +484,7 @@ export const ResidentOverviewPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <Users size={16} color="var(--brand-blue)" />
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--neutral-dark)', textTransform: 'uppercase' }}>
-              Roommates in Room {user?.roomNumber || '204'}
+              {user?.roomNumber ? `Roommates in Room ${user.roomNumber}` : 'Roommates Roster (Unassigned)'}
             </span>
           </div>
           {roommates.length === 0 ? (
