@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
-import { ParticleWave } from '../components/common/ParticleWave';
+import { OrbitalCoreCanvas } from '../components/common/OrbitalCoreCanvas';
 import {
   Building2,
   ShieldCheck,
@@ -98,8 +98,8 @@ export const LoginPage: React.FC = () => {
         overflow: 'hidden'
       }}
     >
-      {/* 3D Undulating Particle Wave in background */}
-      <ParticleWave opacity={0.65} />
+      {/* 3D Jarvis Orbital Core Particle Field in background */}
+      <OrbitalCoreCanvas />
 
       {/* Radial Glow Spotlight */}
       <div

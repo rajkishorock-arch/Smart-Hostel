@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ParticleWave } from '../components/common/ParticleWave';
+import { OrbitalCoreCanvas } from '../components/common/OrbitalCoreCanvas';
 import {
   Building2,
   User,
@@ -103,8 +103,8 @@ export const RegisterPage: React.FC = () => {
         overflow: 'hidden'
       }}
     >
-      {/* 3D Undulating Particle Wave background */}
-      <ParticleWave opacity={0.65} />
+      {/* 3D Jarvis Orbital Core Particle Field in background */}
+      <OrbitalCoreCanvas />
 
       {/* Radial Spotlight */}
       <div

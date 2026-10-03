@@ -12,7 +12,19 @@ import {
 
 export const Footer: React.FC = () => {
   return (
-    <footer style={{ background: '#0f172a', color: '#94a3b8', paddingTop: '64px', paddingBottom: '32px' }}>
+    <footer
+      style={{
+        background: 'rgba(3, 7, 18, 0.9)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(0, 191, 251, 0.2)',
+        color: '#94a3b8',
+        paddingTop: '64px',
+        paddingBottom: '32px',
+        position: 'relative',
+        zIndex: 10
+      }}
+    >
       <div className="container">
         <div
           style={{
@@ -30,17 +42,18 @@ export const Footer: React.FC = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
+                  background: 'linear-gradient(135deg, #00BFFB 0%, #1e3a8a 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#ffffff'
+                  color: '#ffffff',
+                  boxShadow: '0 0 15px rgba(0, 191, 251, 0.35)'
                 }}
               >
                 <Building2 size={20} />
               </div>
               <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
-                Smart<span style={{ color: '#818cf8' }}>Hostel</span>
+                Smart<span style={{ color: '#00BFFB', textShadow: '0 0 12px rgba(0, 191, 251, 0.5)' }}>Hostel</span>
               </span>
             </div>
             <p style={{ fontSize: '0.875rem', lineHeight: '1.6', color: '#94a3b8', marginBottom: '20px' }}>

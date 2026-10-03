@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ParticleWave } from '../common/ParticleWave';
 import {
   Building2,
   Utensils,
@@ -29,8 +28,8 @@ export const Hero: React.FC = () => {
     <section
       style={{
         position: 'relative',
-        background: '#030712',
-        borderBottom: '1px solid rgba(0, 191, 251, 0.2)',
+        background: 'transparent',
+        borderBottom: '1px solid rgba(0, 191, 251, 0.15)',
         paddingTop: '72px',
         paddingBottom: '96px',
         overflow: 'hidden',
@@ -40,9 +39,6 @@ export const Hero: React.FC = () => {
         justifyContent: 'center'
       }}
     >
-      {/* 3D Undulating Particle Wave Background Canvas (Jarvis & GEC-IoT style) */}
-      <ParticleWave opacity={0.8} />
-
       {/* Cyberpunk Radial Spotlight */}
       <div
         style={{
@@ -264,8 +260,131 @@ export const Hero: React.FC = () => {
           </div>
         </div>
 
+        {/* 3D ORBITAL CORE HUD STAGE (Matches jarvisapp.in & media_1791034272586.png) */}
+        <div
+          className="hud-frame"
+          style={{
+            maxWidth: '960px',
+            margin: '0 auto 48px auto',
+            minHeight: '340px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '24px 28px',
+            position: 'relative',
+            background: 'rgba(8, 14, 28, 0.4)',
+            border: '1px solid rgba(0, 191, 251, 0.3)',
+            boxShadow: '0 0 50px rgba(0, 191, 251, 0.12), inset 0 0 30px rgba(0, 191, 251, 0.05)'
+          }}
+        >
+          {/* HUD Corner Brackets */}
+          <div className="hud-corner tl" />
+          <div className="hud-corner tr" />
+          <div className="hud-corner bl" />
+          <div className="hud-corner br" />
+
+          {/* HUD Top Telemetry Bar */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              position: 'relative',
+              zIndex: 2,
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}
+          >
+            <div className="hud-tag">
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: '#00BFFB',
+                  display: 'inline-block',
+                  boxShadow: '0 0 8px #00BFFB'
+                }}
+                className="pulse-indicator"
+              />
+              <span>SYS-LINK ESTABLISHED</span>
+            </div>
+            <div className="hud-tag" style={{ color: '#94a3b8' }}>
+              <span>PARTICLES • 8,200 ONLINE</span>
+            </div>
+          </div>
+
+          {/* Center Orbital Core Viewport Area */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '64px 0 36px 0',
+              position: 'relative',
+              zIndex: 2,
+              textAlign: 'center'
+            }}
+          >
+            {/* Glowing Status Pill directly below the rotating 3D Torus */}
+            <div className="orbital-badge">
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: '#00BFFB',
+                  boxShadow: '0 0 10px #00BFFB',
+                  display: 'inline-block'
+                }}
+                className="pulse-indicator"
+              />
+              <span>ORBITAL CORE • ENGAGED</span>
+            </div>
+
+            <div
+              style={{
+                marginTop: '16px',
+                fontSize: '0.8rem',
+                color: '#64748b',
+                letterSpacing: '0.12em',
+                fontFamily: 'monospace',
+                textTransform: 'uppercase'
+              }}
+            >
+              AUTONOMOUS RESIDENTIAL NEURAL FABRIC • SPATIAL 3D TELEMETRY
+            </div>
+          </div>
+
+          {/* HUD Bottom Telemetry Bar */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              position: 'relative',
+              zIndex: 2,
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              paddingTop: '16px',
+              marginTop: '12px',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}
+          >
+            <div className="hud-tag" style={{ color: '#64748b' }}>
+              <span>JARVIS / SMART HOSTEL CORE • v2.6.0</span>
+            </div>
+            <div className="hud-tag" style={{ color: '#38bdf8' }}>
+              <Zap size={13} color="#00BFFB" />
+              <span>SECURE QUANTUM CHANNEL • AES-256</span>
+            </div>
+          </div>
+        </div>
+
         {/* Futuristic Cyber Deck Console Showcase */}
         <div
+          id="operations-hud"
           className="glass-card"
           style={{
             maxWidth: '1100px',
