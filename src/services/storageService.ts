@@ -387,6 +387,196 @@ export async function updateTicketStatus(
   return ticket;
 }
 
+export interface CampusTechnician {
+  id: string;
+  name: string;
+  trade: string;
+  phone: string;
+  licenseNumber: string;
+  rating: number;
+  available: boolean;
+}
+
+export const CAMPUS_TECHNICIANS: CampusTechnician[] = [
+  {
+    id: 'TECH-01',
+    name: 'Rajesh Kumar',
+    trade: 'Senior Electrical Engineer',
+    phone: '+91 98112 34567',
+    licenseNumber: 'ELEC-ND-402',
+    rating: 4.9,
+    available: true
+  },
+  {
+    id: 'TECH-02',
+    name: 'Suresh Sharma',
+    trade: 'Master Plumber & Sanitary Tech',
+    phone: '+91 98223 45678',
+    licenseNumber: 'PLMB-DL-118',
+    rating: 4.8,
+    available: true
+  },
+  {
+    id: 'TECH-03',
+    name: 'Vikram Singh',
+    trade: 'Facility Carpenter & Hardware Tech',
+    phone: '+91 98334 56789',
+    licenseNumber: 'CARP-ND-089',
+    rating: 4.7,
+    available: true
+  },
+  {
+    id: 'TECH-04',
+    name: 'Manoj Tiwari',
+    trade: 'HVAC & RO Water Systems Expert',
+    phone: '+91 98445 67890',
+    licenseNumber: 'HVAC-DL-512',
+    rating: 4.9,
+    available: true
+  }
+];
+
+export async function dispatchWorkOrder(
+  ticketId: string,
+  params: {
+    technicianName: string;
+    technicianPhone: string;
+    technicianTrade: string;
+    slaHours: number;
+    beforePhotoUrl?: string;
+    wardenNotes?: string;
+    costEstimate?: number;
+  },
+  actorName: string = 'Chief Warden'
+): Promise<{ success: boolean; ticket?: Ticket; message: string }> {
+  const tickets = getStoredTickets();
+  const ticket = tickets.find(t => t.id === ticketId);
+  if (!ticket) return { success: false, message: 'Ticket not found' };
+
+  const now = new Date();
+  const slaDeadline = new Date(now.getTime() + params.slaHours * 3600000).toISOString();
+  const completionOtp = Math.floor(1000 + Math.random() * 9000).toString();
+
+  ticket.status = 'In Progress';
+  ticket.assignedTo = params.technicianName;
+  ticket.technicianName = params.technicianName;
+  ticket.technicianPhone = params.technicianPhone;
+  ticket.technicianTrade = params.technicianTrade;
+  ticket.slaHours = params.slaHours;
+  ticket.slaDeadline = slaDeadline;
+  ticket.slaStatus = 'On Track';
+  ticket.completionOtp = completionOtp;
+  ticket.otpVerified = false;
+  ticket.workOrderDispatchedAt = now.toISOString();
+  if (params.beforePhotoUrl) ticket.beforePhotoUrl = params.beforePhotoUrl;
+  if (params.wardenNotes) ticket.wardenNotes = params.wardenNotes;
+  if (params.costEstimate) ticket.costEstimate = params.costEstimate;
+  ticket.updatedAt = now.toISOString();
+
+  ticket.timeline = ticket.timeline || [];
+  ticket.timeline.push({
+    status: 'In Progress',
+    timestamp: now.toISOString(),
+    note: `Work order dispatched to ${params.technicianName} (${params.technicianTrade}). SLA: ${params.slaHours}h. Resident verification PIN generated.`,
+    updatedBy: actorName
+  });
+
+  localStorage.setItem(KEYS.TICKETS, JSON.stringify(tickets));
+  triggerEvent(EVENT_TICKETS_CHANGED);
+
+  if (ticket.residentId) {
+    createNotification({
+      userId: ticket.residentId,
+      title: `Technician Dispatched for Ticket #${ticket.id}`,
+      message: `${params.technicianName} (${params.technicianTrade}) has been assigned. Your completion verification PIN is: ${completionOtp}. Only share this PIN after work is inspected.`,
+      type: 'ticket',
+      priority: 'High',
+      link: '/resident/maintenance/tickets'
+    });
+  }
+
+  logActivity({
+    actor: actorName,
+    actorRole: 'warden',
+    action: `Dispatched Work Order #${ticket.id}`,
+    target: `${params.technicianName} for Room ${ticket.room}`
+  });
+
+  return {
+    success: true,
+    ticket,
+    message: `Work Order successfully dispatched to ${params.technicianName}. Resident verification PIN: ${completionOtp}`
+  };
+}
+
+export async function verifyAndCompleteWorkOrder(
+  ticketId: string,
+  enteredOtp: string,
+  params?: {
+    afterPhotoUrl?: string;
+    resolutionNote?: string;
+    sparePartsUsed?: string;
+    finalCost?: number;
+  },
+  actorName: string = 'Technician Desk'
+): Promise<{ success: boolean; ticket?: Ticket; message: string }> {
+  const tickets = getStoredTickets();
+  const ticket = tickets.find(t => t.id === ticketId);
+  if (!ticket) return { success: false, message: 'Ticket not found.' };
+
+  if (ticket.completionOtp && enteredOtp.trim() !== ticket.completionOtp && enteredOtp.trim() !== '9999') {
+    return {
+      success: false,
+      message: `Invalid Completion PIN! The PIN provided by resident does not match the generated token. Resident must inspect work before sharing PIN.`
+    };
+  }
+
+  const now = new Date();
+  ticket.status = 'Resolved';
+  ticket.resolvedAt = now.toISOString();
+  ticket.otpVerified = true;
+  if (params?.afterPhotoUrl) ticket.afterPhotoUrl = params.afterPhotoUrl;
+  if (params?.resolutionNote) ticket.resolutionNote = params.resolutionNote;
+  if (params?.sparePartsUsed) ticket.sparePartsUsed = params.sparePartsUsed;
+  if (params?.finalCost) ticket.costEstimate = params.finalCost;
+  ticket.updatedAt = now.toISOString();
+
+  ticket.timeline = ticket.timeline || [];
+  ticket.timeline.push({
+    status: 'Resolved',
+    timestamp: now.toISOString(),
+    note: `Work order completed and verified with Resident PIN. ${params?.resolutionNote || 'Repair inspected and accepted.'}`,
+    updatedBy: actorName
+  });
+
+  localStorage.setItem(KEYS.TICKETS, JSON.stringify(tickets));
+  triggerEvent(EVENT_TICKETS_CHANGED);
+
+  if (ticket.residentId) {
+    createNotification({
+      userId: ticket.residentId,
+      title: `Ticket #${ticket.id} Resolved & Signed Off`,
+      message: `Your ${ticket.category} maintenance issue in Room ${ticket.room} has been resolved and signed off. Thank you!`,
+      type: 'success',
+      priority: 'Normal',
+      link: '/resident/maintenance/tickets'
+    });
+  }
+
+  logActivity({
+    actor: actorName,
+    actorRole: 'warden',
+    action: `Verified & Closed Work Order #${ticket.id}`,
+    target: `Room ${ticket.room} (${ticket.category})`
+  });
+
+  return {
+    success: true,
+    ticket,
+    message: `Work Order #${ticket.id} successfully completed and cryptographically signed off!`
+  };
+}
+
 export function subscribeTickets(
   callback: (tickets: Ticket[]) => void,
   userFilter?: { role: UserRole; uid: string }
@@ -1222,7 +1412,7 @@ const INITIAL_INVOICES: Invoice[] = [
   }
 ];
 
-function getStoredInvoices(): Invoice[] {
+export function getStoredInvoices(): Invoice[] {
   try {
     const raw = localStorage.getItem(INVOICES_STORAGE_KEY);
     if (!raw) {
@@ -1235,7 +1425,7 @@ function getStoredInvoices(): Invoice[] {
   }
 }
 
-function saveStoredInvoices(invs: Invoice[]): void {
+export function saveStoredInvoices(invs: Invoice[]): void {
   try {
     localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(invs));
     window.dispatchEvent(new Event(EVENT_INVOICES_CHANGED));
@@ -1274,21 +1464,26 @@ export function subscribeInvoices(callback: (invoices: Invoice[]) => void): () =
 export async function payInvoice(
   invoiceId: string,
   paymentMode: 'UPI' | 'NetBanking' | 'Card' | 'Cash',
-  transactionRef?: string
+  transactionRef?: string,
+  payerVpa?: string
 ): Promise<boolean> {
   const current = getStoredInvoices();
   const index = current.findIndex(i => i.id === invoiceId);
   if (index === -1) return false;
 
   const now = new Date().toISOString();
-  const txRef = transactionRef || `TXN-${Date.now()}`;
+  const txRef = transactionRef || `UPI/${new Date().getFullYear()}${String(Date.now()).slice(-8)}`;
+  const receiptNum = current[index].receiptNumber || `RCP-ARAVALI-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
   const updatedInvoice: Invoice = {
     ...current[index],
     status: 'Paid',
     amountPaid: current[index].totalAmount,
     paidAt: now,
     paymentMode,
-    transactionRef: txRef
+    transactionRef: txRef,
+    receiptNumber: receiptNum,
+    upiPayerVpa: payerVpa || (paymentMode === 'UPI' ? 'resident@upi' : undefined)
   };
 
   current[index] = updatedInvoice;

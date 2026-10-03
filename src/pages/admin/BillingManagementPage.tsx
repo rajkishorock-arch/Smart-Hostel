@@ -14,7 +14,9 @@ import {
   Filter,
   Receipt,
   PlusCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Printer,
+  ShieldCheck
 } from 'lucide-react';
 import { exportFinancialsToCSV } from '../../services/reportService';
 import { generateFinancialAnalytics } from '../../services/predictiveService';
@@ -30,6 +32,7 @@ export const BillingManagementPage: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [manualPayMode, setManualPayMode] = useState<'Cash' | 'NetBanking' | 'UPI'>('Cash');
   const [manualRef, setManualRef] = useState<string>('');
+  const [receiptViewingInvoice, setReceiptViewingInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     const unsub = subscribeInvoices(invs => setInvoices(invs));
@@ -305,9 +308,31 @@ export const BillingManagementPage: React.FC = () => {
                           </>
                         )}
                         {inv.status === 'Paid' && (
-                          <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <CheckCircle2 size={14} /> Settled
-                          </span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle2 size={14} /> Settled
+                            </span>
+                            <button
+                              onClick={() => setReceiptViewingInvoice(inv)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #a7f3d0',
+                                background: '#ecfdf5',
+                                color: '#047857',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                              title="Print Official Collegiate Receipt"
+                            >
+                              <Receipt size={12} />
+                              <span>Receipt</span>
+                            </button>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -402,6 +427,191 @@ export const BillingManagementPage: React.FC = () => {
                   style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: 'var(--brand-purple)', color: '#ffffff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Confirm Settlement
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Official Collegiate Fee Receipt (Warden View) */}
+        {receiptViewingInvoice && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(5px)',
+              zIndex: 3100,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px'
+            }}
+            onClick={() => setReceiptViewingInvoice(null)}
+          >
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '620px',
+                background: '#ffffff',
+                borderRadius: '20px',
+                padding: '36px',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)',
+                maxHeight: '92vh',
+                overflowY: 'auto',
+                position: 'relative',
+                border: '1px solid #cbd5e1'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Receipt Header */}
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '16px', marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  CENTRAL RESIDENTIAL ACCOMMODATION SERVICES
+                </div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: '4px 0' }}>
+                  ARAVALI RESIDENCE HALL
+                </h2>
+                <div style={{ fontSize: '0.78rem', color: '#475569' }}>
+                  Affiliated to Technical Campus Board &bull; Code: ARV-HALL-01 &bull; GST Exempt (Educational Hostel)
+                </div>
+                <div style={{ display: 'inline-block', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', fontSize: '0.72rem', fontWeight: 800, padding: '3px 12px', borderRadius: '9999px', marginTop: '8px' }}>
+                  OFFICIAL COLLEGIATE FEE RECEIPT &bull; CONFIRMED &amp; CLEARED
+                </div>
+              </div>
+
+              {/* Receipt Particulars Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.8rem', marginBottom: '20px', background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <div>
+                  <span style={{ color: '#64748b' }}>Receipt No:</span><br />
+                  <strong style={{ fontFamily: 'monospace', fontSize: '0.88rem', color: '#0f172a' }}>
+                    {receiptViewingInvoice.receiptNumber || `RCP-ARAVALI-2026-${receiptViewingInvoice.id.slice(-4)}`}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>Date of Clearing:</span><br />
+                  <strong style={{ color: '#0f172a' }}>
+                    {new Date(receiptViewingInvoice.paidAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>Student Name:</span><br />
+                  <strong style={{ color: '#0f172a' }}>{receiptViewingInvoice.studentName}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>Room &amp; Bed Allotment:</span><br />
+                  <strong style={{ color: '#0f172a' }}>Room {receiptViewingInvoice.roomNumber || '204'}, Block A</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>Payment Mode:</span><br />
+                  <strong style={{ color: '#0f172a' }}>{receiptViewingInvoice.paymentMode || 'UPI / Bank Transfer'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>Bank UTR / Transaction Ref:</span><br />
+                  <strong style={{ fontFamily: 'monospace', color: '#0f172a' }}>
+                    {receiptViewingInvoice.transactionRef || 'OFFLINE/CLEARED'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Itemized Table */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: '20px' }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9', borderBottom: '1.5px solid #cbd5e1', textAlign: 'left', color: '#475569' }}>
+                    <th style={{ padding: '8px 10px', fontWeight: 700 }}>Description</th>
+                    <th style={{ padding: '8px 10px', fontWeight: 700 }}>Cycle</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700 }}>Amount (INR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px 10px' }}>Room Accommodation (Block A)</td>
+                    <td style={{ padding: '8px 10px', color: '#64748b' }}>{receiptViewingInvoice.term}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>₹{receiptViewingInvoice.roomFee.toLocaleString()}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px 10px' }}>Mess Catering &amp; Food Services</td>
+                    <td style={{ padding: '8px 10px', color: '#64748b' }}>{receiptViewingInvoice.term}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>₹{receiptViewingInvoice.messFee.toLocaleString()}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px 10px' }}>Amenities, Fiber WiFi &amp; Maintenance</td>
+                    <td style={{ padding: '8px 10px', color: '#64748b' }}>{receiptViewingInvoice.term}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>₹{receiptViewingInvoice.amenitiesFee.toLocaleString()}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: '#f8fafc', borderTop: '2px solid #0f172a' }}>
+                    <td colSpan={2} style={{ padding: '10px', fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                      TOTAL AMOUNT RECEIVED:
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: 900, fontSize: '1.1rem', color: '#0f172a' }}>
+                      ₹{receiptViewingInvoice.totalAmount.toLocaleString()}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              {/* Digital Signature & Verification Seal */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px dashed #cbd5e1', paddingTop: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={32} color="#059669" />
+                  <div style={{ fontSize: '0.72rem', color: '#475569' }}>
+                    <strong>Cryptographically Verified:</strong><br />
+                    Central Accounts Ledger
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'cursive', fontSize: '1rem', color: '#1e3a8a', marginBottom: '2px' }}>
+                    Dr. R. K. Verma
+                  </div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0f172a' }}>
+                    Chief Warden &amp; Cashier Desk
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: '#64748b' }}>
+                    Aravali Residence Hall
+                  </div>
+                </div>
+              </div>
+
+              {/* Print / Close Buttons */}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  style={{
+                    flex: 1,
+                    background: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    fontSize: '0.84rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Printer size={16} /> Print Official PDF Receipt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReceiptViewingInvoice(null)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close
                 </button>
               </div>
             </div>

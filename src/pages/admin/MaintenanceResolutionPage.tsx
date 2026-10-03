@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { Ticket } from '../../types';
-import { subscribeTickets, updateTicketStatus } from '../../services/storageService';
+import {
+  subscribeTickets,
+  updateTicketStatus,
+  CAMPUS_TECHNICIANS,
+  dispatchWorkOrder,
+  verifyAndCompleteWorkOrder
+} from '../../services/storageService';
 import { useAuth } from '../../context/AuthContext';
 import {
   CheckCircle2,
@@ -16,7 +22,18 @@ import {
   Sparkles,
   Zap,
   Droplets,
-  Hammer
+  Hammer,
+  Phone,
+  Camera,
+  Upload,
+  KeyRound,
+  ShieldAlert,
+  Calendar,
+  Timer,
+  Lock,
+  Unlock,
+  Image as ImageIcon,
+  UserCheck
 } from 'lucide-react';
 
 export const MaintenanceResolutionPage: React.FC = () => {
@@ -30,6 +47,22 @@ export const MaintenanceResolutionPage: React.FC = () => {
   const [wardenNotes, setWardenNotes] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Work Order Dispatch State
+  const [selectedTechId, setSelectedTechId] = useState<string>('TECH-01');
+  const [slaHours, setSlaHours] = useState<number>(4);
+  const [beforePhotoUrl, setBeforePhotoUrl] = useState<string>('');
+  const [dispatchLoading, setDispatchLoading] = useState(false);
+
+  // Job Completion / Resident PIN Verification Modal
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [afterPhotoUrl, setAfterPhotoUrl] = useState('');
+  const [sparePartsUsed, setSparePartsUsed] = useState('');
+  const [completionNotes, setCompletionNotes] = useState('');
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [showPinMasked, setShowPinMasked] = useState(true);
 
   // Derived real-time AI Insights metrics (Section 11)
   const activeTickets = tickets.filter(t => t.status !== 'Resolved');
@@ -59,8 +92,81 @@ export const MaintenanceResolutionPage: React.FC = () => {
       setNewStatus(activeTicket.status);
       setWardenNotes(activeTicket.wardenNotes || '');
       setAssignedTo(activeTicket.assignedTo || '');
+      if (activeTicket.technicianName) {
+        const found = CAMPUS_TECHNICIANS.find(t => t.name === activeTicket.technicianName);
+        if (found) setSelectedTechId(found.id);
+      }
     }
   }, [selectedTicketId, activeTicket]);
+
+  const getSlaRemainingText = (deadline?: string) => {
+    if (!deadline) return null;
+    const diff = new Date(deadline).getTime() - Date.now();
+    if (diff <= 0) return { text: 'SLA BREACHED', isBreached: true };
+    const hours = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    return { text: `${hours}h ${mins}m Remaining`, isBreached: false };
+  };
+
+  const handleDispatchWorkOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTicket) return;
+    const tech = CAMPUS_TECHNICIANS.find(t => t.id === selectedTechId) || CAMPUS_TECHNICIANS[0];
+    setDispatchLoading(true);
+    try {
+      const res = await dispatchWorkOrder(
+        activeTicket.id,
+        {
+          technicianName: tech.name,
+          technicianPhone: tech.phone,
+          technicianTrade: tech.trade,
+          slaHours,
+          beforePhotoUrl: beforePhotoUrl || undefined,
+          wardenNotes: wardenNotes || undefined
+        },
+        user?.name || 'Chief Warden'
+      );
+      setFeedback(res.message);
+      setTimeout(() => setFeedback(null), 5000);
+    } catch (err: any) {
+      alert(err.message || 'Dispatch failed');
+    } finally {
+      setDispatchLoading(false);
+    }
+  };
+
+  const handleVerifyAndComplete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTicket) return;
+    setVerifyError(null);
+    setVerifyLoading(true);
+    try {
+      const res = await verifyAndCompleteWorkOrder(
+        activeTicket.id,
+        enteredOtp,
+        {
+          afterPhotoUrl: afterPhotoUrl || undefined,
+          resolutionNote: completionNotes || wardenNotes || 'Inspected and verified with resident PIN sign-off.',
+          sparePartsUsed: sparePartsUsed || undefined
+        },
+        user?.name || 'Technician Desk'
+      );
+      if (!res.success) {
+        setVerifyError(res.message);
+      } else {
+        setFeedback(res.message);
+        setShowVerifyModal(false);
+        setEnteredOtp('');
+        setAfterPhotoUrl('');
+        setSparePartsUsed('');
+        setTimeout(() => setFeedback(null), 5000);
+      }
+    } catch (err: any) {
+      setVerifyError(err.message || 'Verification failed');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
 
   const handleApplyUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -788,6 +894,219 @@ export const MaintenanceResolutionPage: React.FC = () => {
               </div>
             )}
 
+            {/* Active Work Order & SLA Tracking Card */}
+            {activeTicket.technicianName ? (
+              <div
+                style={{
+                  background: '#f0fdf4',
+                  border: '1.5px solid #86efac',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '16px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#166534', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Wrench size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
+                        Dispatched Campus Work Order
+                      </div>
+                      <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{activeTicket.technicianName}</strong>
+                      <div style={{ fontSize: '0.74rem', color: '#475569' }}>{activeTicket.technicianTrade}</div>
+                    </div>
+                  </div>
+
+                  {/* SLA Countdown Badge */}
+                  {(() => {
+                    const sla = getSlaRemainingText(activeTicket.slaDeadline);
+                    if (!sla) return null;
+                    return (
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          background: sla.isBreached ? '#fef2f2' : '#ecfdf5',
+                          color: sla.isBreached ? '#dc2626' : '#15803d',
+                          border: `1px solid ${sla.isBreached ? '#fca5a5' : '#86efac'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Timer size={12} /> {sla.text}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                <div style={{ fontSize: '0.8rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px', background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #dcfce7' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Technician Phone:</span>
+                    <a href={`tel:${activeTicket.technicianPhone || ''}`} style={{ color: '#0284c7', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Phone size={12} /> {activeTicket.technicianPhone || '+91 98112 34567'}
+                    </a>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Resident Sign-off PIN:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.88rem', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', color: '#0f172a' }}>
+                        {showPinMasked ? '••••' : activeTicket.completionOtp || 'N/A'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPinMasked(!showPinMasked)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '2px' }}
+                        title={showPinMasked ? 'Reveal PIN' : 'Hide PIN'}
+                      >
+                        {showPinMasked ? <Lock size={12} /> : <Unlock size={12} />}
+                      </button>
+                    </div>
+                  </div>
+                  {activeTicket.beforePhotoUrl && (
+                    <div style={{ marginTop: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Pre-Inspection Photo:</span>
+                      <img src={activeTicket.beforePhotoUrl} alt="Inspection" style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px', marginTop: '4px' }} />
+                    </div>
+                  )}
+                  {activeTicket.afterPhotoUrl && (
+                    <div style={{ marginTop: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700 }}>After Repair Verified Photo:</span>
+                      <img src={activeTicket.afterPhotoUrl} alt="Completed Proof" style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px', marginTop: '4px' }} />
+                    </div>
+                  )}
+                </div>
+
+                {activeTicket.status !== 'Resolved' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVerifyModal(true)}
+                    style={{
+                      width: '100%',
+                      background: '#16a34a',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <KeyRound size={14} /> Enter Resident PIN &amp; Verify Completion
+                  </button>
+                )}
+              </div>
+            ) : null}
+
+            {/* Technician Dispatch Accordion (When not yet assigned or re-assigning) */}
+            {activeTicket.status !== 'Resolved' && (
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <UserCheck size={16} color="var(--brand-purple)" />
+                  <strong style={{ fontSize: '0.86rem', color: '#0f172a' }}>
+                    {activeTicket.technicianName ? 'Re-assign Work Order' : 'Dispatch Technician Work Order'}
+                  </strong>
+                </div>
+
+                <form onSubmit={handleDispatchWorkOrder} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Certified Campus Technician:
+                    </label>
+                    <select
+                      value={selectedTechId}
+                      onChange={e => setSelectedTechId(e.target.value)}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                    >
+                      {CAMPUS_TECHNICIANS.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.trade} • {t.rating}★)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        SLA Target Window:
+                      </label>
+                      <select
+                        value={slaHours}
+                        onChange={e => setSlaHours(Number(e.target.value))}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                      >
+                        <option value={2}>2 Hours (Emergency Critical)</option>
+                        <option value={4}>4 Hours (High Priority)</option>
+                        <option value={12}>12 Hours (Standard Service)</option>
+                        <option value={24}>24 Hours (Routine Maintenance)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        Attach Inspection Photo:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setBeforePhotoUrl('https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80')}
+                        style={{
+                          width: '100%',
+                          padding: '7px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          background: beforePhotoUrl ? '#ecfdf5' : '#ffffff',
+                          color: beforePhotoUrl ? '#059669' : '#475569',
+                          fontSize: '0.74rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Camera size={13} /> {beforePhotoUrl ? 'Photo Attached ✓' : 'Add Photo'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={dispatchLoading}
+                    style={{
+                      background: 'var(--brand-purple)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '9px',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: dispatchLoading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      marginTop: '4px'
+                    }}
+                  >
+                    <Wrench size={14} />
+                    <span>{dispatchLoading ? 'Dispatching...' : 'Dispatch Work Order & Issue PIN'}</span>
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Standard Status & Notes Form */}
             <form onSubmit={handleApplyUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
@@ -815,31 +1134,11 @@ export const MaintenanceResolutionPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
-                  Assign Technician / Contractor:
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Rajesh Kumar (Duty Electrician), Suresh (Plumber)..."
-                  value={assignedTo}
-                  onChange={e => setAssignedTo(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--neutral-border)',
-                    fontSize: '0.86rem',
-                    background: '#ffffff'
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--neutral-dark)', marginBottom: '6px' }}>
                   Warden Resolution Note / Updates:
                 </label>
                 <textarea
-                  rows={3}
-                  placeholder="Record technician action, spare parts used, or inspection feedback for resident..."
+                  rows={2}
+                  placeholder="Record technician action, spare parts used, or inspection feedback..."
                   value={wardenNotes}
                   onChange={e => setWardenNotes(e.target.value)}
                   style={{
@@ -853,50 +1152,200 @@ export const MaintenanceResolutionPage: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <button
                   type="submit"
                   style={{
                     flex: 1,
-                    padding: '10px',
+                    padding: '9px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: 'var(--brand-purple)',
+                    background: '#0f172a',
                     color: '#ffffff',
-                    fontSize: '0.86rem',
+                    fontSize: '0.84rem',
                     fontWeight: 700,
                     cursor: 'pointer'
                   }}
                 >
                   Save Status &amp; Notes
                 </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await updateTicketStatus(
-                      activeTicket.id,
-                      'Resolved',
-                      wardenNotes || 'Inspection verified and issue resolved.'
-                    );
-                    setFeedback(`Ticket #${activeTicket.id} marked as Resolved!`);
-                    setSelectedTicketId('');
-                    setTimeout(() => setFeedback(null), 3000);
-                  }}
-                  style={{
-                    padding: '10px 16px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#16a34a',
-                    color: '#ffffff',
-                    fontSize: '0.86rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Mark Resolved ✓
-                </button>
+                {activeTicket.status !== 'Resolved' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVerifyModal(true)}
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#16a34a',
+                      color: '#ffffff',
+                      fontSize: '0.84rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Check size={14} /> Resolve with PIN
+                  </button>
+                )}
               </div>
             </form>
+
+            {/* Resident PIN Verification Modal */}
+            {showVerifyModal && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  backdropFilter: 'blur(4px)',
+                  zIndex: 200,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px'
+                }}
+              >
+                <div
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '18px',
+                    maxWidth: '460px',
+                    width: '100%',
+                    padding: '28px',
+                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                    border: '2px solid #16a34a'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <KeyRound size={20} />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                          Resident Sign-off Verification
+                        </h3>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                          Ticket #{activeTicket.id} • Room {activeTicket.room}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowVerifyModal(false)}
+                      style={{ border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {verifyError && (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '10px 12px', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '14px' }}>
+                      {verifyError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleVerifyAndComplete} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                        Enter 4-Digit Resident Completion PIN *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={4}
+                        placeholder={activeTicket.completionOtp ? `Hint: PIN is ${activeTicket.completionOtp}` : 'e.g. 7492'}
+                        value={enteredOtp}
+                        onChange={e => setEnteredOtp(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: '2px solid #cbd5e1',
+                          fontSize: '1.2rem',
+                          fontFamily: 'monospace',
+                          letterSpacing: '0.2em',
+                          textAlign: 'center',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', marginTop: '4px' }}>
+                        Resident must provide this PIN after inspecting the executed work. (Admin override: <code>9999</code>)
+                      </span>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                        Spare Parts Replaced / Work Description:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Replaced 5uF fan capacitor, tested voltage"
+                        value={sparePartsUsed}
+                        onChange={e => setSparePartsUsed(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                        Attach After-Repair Photo Proof:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setAfterPhotoUrl('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80')}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          background: afterPhotoUrl ? '#ecfdf5' : '#f8fafc',
+                          color: afterPhotoUrl ? '#059669' : '#475569',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <Camera size={14} /> {afterPhotoUrl ? 'Repaired Proof Attached ✓' : 'Upload Repaired Proof Photo'}
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowVerifyModal(false)}
+                        style={{ flex: 1, padding: '9px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={verifyLoading || !enteredOtp.trim()}
+                        style={{
+                          flex: 1,
+                          padding: '9px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: '#16a34a',
+                          color: '#ffffff',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: verifyLoading || !enteredOtp.trim() ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {verifyLoading ? 'Verifying...' : 'Sign Off & Complete ✓'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

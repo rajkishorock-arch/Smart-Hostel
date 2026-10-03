@@ -17,7 +17,12 @@ import {
   ShieldAlert,
   UserCheck,
   Check,
-  CircleDot
+  CircleDot,
+  Phone,
+  KeyRound,
+  Timer,
+  Camera,
+  Wrench
 } from 'lucide-react';
 
 const LIFECYCLE_STAGES: TicketStatus[] = [
@@ -347,24 +352,127 @@ export const ResidentTicketsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Assigned Technician Banner */}
-                {t.assignedTo && (
+                {/* Assigned Technician & Work Order Card */}
+                {(t.assignedTo || t.technicianName) && (
                   <div
                     style={{
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      background: '#eff6ff',
-                      border: '1px solid #bfdbfe',
-                      marginBottom: '14px',
-                      fontSize: '0.8rem',
-                      color: '#1e40af',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
+                      padding: '16px',
+                      borderRadius: '12px',
+                      background: t.status === 'Resolved' ? '#f0fdf4' : '#eff6ff',
+                      border: `1.5px solid ${t.status === 'Resolved' ? '#86efac' : '#93c5fd'}`,
+                      marginBottom: '16px'
                     }}
                   >
-                    <UserCheck size={16} />
-                    <span><strong>Assigned Technician:</strong> {t.assignedTo}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: t.status === 'Resolved' ? '#166534' : '#1d4ed8', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Wrench size={18} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: t.status === 'Resolved' ? '#166534' : '#1e40af' }}>
+                            {t.status === 'Resolved' ? 'Verified Work Order Completed' : 'Dispatched Technician Work Order'}
+                          </span>
+                          <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                            {t.technicianName || t.assignedTo}
+                          </h4>
+                          <span style={{ fontSize: '0.74rem', color: '#475569' }}>
+                            {t.technicianTrade || 'Certified Campus Facility Technician'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {t.technicianPhone && (
+                        <a
+                          href={`tel:${t.technicianPhone}`}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            color: '#1d4ed8',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <Phone size={13} /> Call Technician
+                        </a>
+                      )}
+                    </div>
+
+                    {/* SLA and Arrival Tracking */}
+                    {t.status !== 'Resolved' && t.slaDeadline && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#1e40af', fontWeight: 600, marginBottom: '12px', background: '#dbeafe', padding: '6px 10px', borderRadius: '6px' }}>
+                        <Timer size={14} />
+                        <span>SLA Commitment: Target completion within {t.slaHours || 4} hours ({new Date(t.slaDeadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>
+                      </div>
+                    )}
+
+                    {/* Resident Completion PIN Box */}
+                    {t.status !== 'Resolved' && (
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          border: '1.5px dashed #3b82f6',
+                          borderRadius: '10px',
+                          padding: '12px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '10px'
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', fontWeight: 800, color: '#1e40af' }}>
+                            <KeyRound size={14} /> YOUR JOB COMPLETION VERIFICATION PIN:
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                            Share this PIN with the technician ONLY after you personally verify the repair is done.
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: '1.3rem',
+                            fontWeight: 900,
+                            letterSpacing: '0.25em',
+                            background: '#0f172a',
+                            color: '#38bdf8',
+                            padding: '4px 14px',
+                            borderRadius: '8px'
+                          }}
+                        >
+                          {t.completionOtp || '7419'}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Photo Proof Gallery */}
+                    {(t.beforePhotoUrl || t.afterPhotoUrl) && (
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                        {t.beforePhotoUrl && (
+                          <div style={{ flex: 1 }}>
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+                              Pre-Repair Inspection:
+                            </span>
+                            <img src={t.beforePhotoUrl} alt="Before" style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px' }} />
+                          </div>
+                        )}
+                        {t.afterPhotoUrl && (
+                          <div style={{ flex: 1 }}>
+                            <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+                              Repaired Proof Photo:
+                            </span>
+                            <img src={t.afterPhotoUrl} alt="After" style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1.5px solid #86efac' }} />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

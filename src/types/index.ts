@@ -104,6 +104,19 @@ export interface Ticket {
   wardenNotes?: string;
   resolutionNote?: string;
   assignedTo?: string;
+  technicianName?: string;
+  technicianPhone?: string;
+  technicianTrade?: string;
+  slaDeadline?: string;
+  slaHours?: number;
+  slaStatus?: 'On Track' | 'At Risk' | 'Breached';
+  beforePhotoUrl?: string;
+  afterPhotoUrl?: string;
+  completionOtp?: string;
+  otpVerified?: boolean;
+  workOrderDispatchedAt?: string;
+  sparePartsUsed?: string;
+  costEstimate?: number;
   resolvedAt?: string;
   timeline?: TicketTimelineEvent[];
   createdAt: string;
@@ -216,6 +229,9 @@ export interface Invoice {
   roomFee: number;
   messFee: number;
   amenitiesFee: number;
+  cautionDeposit?: number;
+  electricitySurcharge?: number;
+  fineAmount?: number;
   totalAmount: number;
   amountPaid: number;
   status: 'Paid' | 'Pending' | 'Overdue';
@@ -223,6 +239,9 @@ export interface Invoice {
   paidAt?: string;
   paymentMode?: 'UPI' | 'NetBanking' | 'Card' | 'Cash';
   transactionRef?: string;
+  receiptNumber?: string;
+  upiPayerVpa?: string;
+  receiptDownloadUrl?: string;
   createdAt: string;
 }
 
